@@ -1,0 +1,224 @@
+---
+title: "DataExploration"
+author: "LFM"
+date: "4/8/2019"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+## Guidelines
+
+* Your data exploration section should contain at least five lines of code that generate summary information about your dataset (or components therein)
+
+* Your data exploration section should contain at least three graphs
+
+* Your statistical modeling section should contain at least three tests, including the rationale why you took the approach you did. Ensure you have met assumptions of tests or that you justify moving forward without meeting assumptions.
+
+* Your data visualization section should contain at least three graphs.
+
+4. Commit and push your updates to Github (i.e., your Master repository) after each analysis session. 
+---
+
+```{r import, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(dplyr)
+library(tidyverse)
+library(tidyr)
+library(lubridate)
+getwd()
+```
+
+```{r read in all data}
+
+Pb1981 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1981_raw.csv")
+Pb1982 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1982_raw.csv")
+Pb1983 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1983_raw.csv")
+Pb1984 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1984_raw.csv")
+Pb1985 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1985_raw.csv")
+Pb1986 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1986_raw.csv")
+Pb1987 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1987_raw.csv")
+Pb1988 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1988_raw.csv")
+Pb1989 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1989_raw.csv")
+Pb1990 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1990_raw.csv")
+Pb1991 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1991_raw.csv")
+Pb1992 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1992_raw.csv")
+Pb1993 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1993_raw.csv")
+Pb1994 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1994_raw.csv")
+Pb1995 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1995_raw.csv")
+Pb1996 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1996_raw.csv")
+Pb1997 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1997_raw.csv")
+Pb1998 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1998_raw.csv")
+Pb1999 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1999_raw.csv")
+Pb2000 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2000_raw.csv")
+Pb2001 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2001_raw.csv")
+Pb2002 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2002_raw.csv")
+Pb2003 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2003_raw.csv")
+Pb2004 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2004_raw.csv")
+Pb2005 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2005_raw.csv")
+Pb2006 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2006_raw.csv")
+Pb2007 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2007_raw.csv")
+Pb2008 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2008_raw.csv")
+Pb2009 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2009_raw.csv")
+Pb2010 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2010_raw.csv")
+Pb2011 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2011_raw.csv")
+Pb2012 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2012_raw.csv")
+Pb2013 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2013_raw.csv")
+Pb2014 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2014_raw.csv")
+Pb2015 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2015_raw.csv")
+Pb2016 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2016_raw.csv")
+Pb2017 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2017_raw.csv")
+Pb2018 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2018_raw.csv")
+```
+
+```{r attempt at fun for reading csv}
+get <- Pb1981
+readin <- read.csv("EPA_Pb_Detroit1981_raw.csv")
+
+Pb1981 <- read.csv("EPA_Pb_Detroit1981_raw.csv")
+```
+
+
+```{r summary information}
+str(Pb1981)
+class(Pb1981$Date)
+head(Pb1981)
+summary(Pb1981)
+```
+#The dates shoud be Year/month/day
+```{r as.Date for all datasets}
+#how to make this a function?
+x <- Pb1981$Date
+
+fmt <- as.Date(x, format = "%m/%d/%Y")
+
+PbYears.Date <- function(x) {
+    fmt <- as.Date(x, format = "%m/%d/%Y")
+fmt
+  }
+PbYears.Date(c(Pb1981, Pb1985, Pb1990, Pb1995,
+               Pb2000, Pb2005, Pb2010, Pb2015, 
+               Pb2018))
+
+class(Pb1981$Date)
+```
+
+```{r manual function to format Date}
+
+Pb1981$Date <- as.Date(Pb1981$Date, format = "%m/%d/%Y")
+Pb1982$Date <- as.Date(Pb1982$Date, format = "%m/%d/%Y")
+Pb1983$Date <- as.Date(Pb1983$Date, format = "%m/%d/%Y")
+Pb1984$Date <- as.Date(Pb1984$Date, format = "%m/%d/%Y")
+Pb1985$Date <- as.Date(Pb1985$Date, format = "%m/%d/%Y")
+Pb1986$Date <- as.Date(Pb1986$Date, format = "%m/%d/%Y")
+Pb1987$Date <- as.Date(Pb1987$Date, format = "%m/%d/%Y")
+Pb1988$Date <- as.Date(Pb1988$Date, format = "%m/%d/%Y")
+Pb1989$Date <- as.Date(Pb1989$Date, format = "%m/%d/%Y")
+Pb1990$Date <- as.Date(Pb1990$Date, format = "%m/%d/%Y")
+Pb1991$Date <- as.Date(Pb1991$Date, format = "%m/%d/%Y")
+Pb1992$Date <- as.Date(Pb1992$Date, format = "%m/%d/%Y")
+Pb1993$Date <- as.Date(Pb1993$Date, format = "%m/%d/%Y")
+Pb1994$Date <- as.Date(Pb1994$Date, format = "%m/%d/%Y")
+Pb1995$Date <- as.Date(Pb1995$Date, format = "%m/%d/%Y")
+Pb1996$Date <- as.Date(Pb1996$Date, format = "%m/%d/%Y")
+Pb1997$Date <- as.Date(Pb1997$Date, format = "%m/%d/%Y")
+Pb1998$Date <- as.Date(Pb1998$Date, format = "%m/%d/%Y")
+Pb1999$Date <- as.Date(Pb1999$Date, format = "%m/%d/%Y")
+Pb2000$Date <- as.Date(Pb2000$Date, format = "%m/%d/%Y")
+Pb2001$Date <- as.Date(Pb2001$Date, format = "%m/%d/%Y")
+Pb2002$Date <- as.Date(Pb2002$Date, format = "%m/%d/%Y")
+Pb2003$Date <- as.Date(Pb2003$Date, format = "%m/%d/%Y")
+Pb2004$Date <- as.Date(Pb2004$Date, format = "%m/%d/%Y")
+Pb2005$Date <- as.Date(Pb2005$Date, format = "%m/%d/%Y")
+Pb2006$Date <- as.Date(Pb2006$Date, format = "%m/%d/%Y")
+Pb2007$Date <- as.Date(Pb2007$Date, format = "%m/%d/%Y")
+Pb2008$Date <- as.Date(Pb2008$Date, format = "%m/%d/%Y")
+Pb2009$Date <- as.Date(Pb2009$Date, format = "%m/%d/%Y")
+Pb2010$Date <- as.Date(Pb2010$Date, format = "%m/%d/%Y")
+Pb2011$Date <- as.Date(Pb2011$Date, format = "%m/%d/%Y")
+Pb2012$Date <- as.Date(Pb2012$Date, format = "%m/%d/%Y")
+Pb2013$Date <- as.Date(Pb2013$Date, format = "%m/%d/%Y")
+Pb2014$Date <- as.Date(Pb2014$Date, format = "%m/%d/%Y")
+Pb2015$Date <- as.Date(Pb2015$Date, format = "%m/%d/%Y")
+Pb2016$Date <- as.Date(Pb2016$Date, format = "%m/%d/%Y")
+Pb2017$Date <- as.Date(Pb2017$Date, format = "%m/%d/%Y")
+Pb2018$Date <- as.Date(Pb2018$Date, format = "%m/%d/%Y")
+```
+#Gather data since there's some columns that are all the same information, or just not useful data (State, County, Daily Observation Count, Daily AQI, Percent Complete, etc.)
+```{r}
+Pb1981.gathered <- Pb1981 %>%
+  select(Date, Site.ID, Site.Name, Daily.Mean.Pb.Concentration, UNITS,
+         SITE_LATITUDE, SITE_LONGITUDE)
+```
+
+#Explore the data graphically
+```{r graphical representation}
+library(colormap)
+
+ggplot(Pb1981.gathered) +
+  geom_histogram(aes(x = Daily.Mean.Pb.Concentration), bins = 45)
+
+ggplot(Pb1981.gathered, aes(x = Date, y = Daily.Mean.Pb.Concentration)) +
+  geom_col()
+
+ggplot(Pb1981.gathered, aes(x = Date, y = Daily.Mean.Pb.Concentration)) +
+  geom_point()
+
+ggplot(Pb1981.gathered, aes(x = Date, y = Daily.Mean.Pb.Concentration), fill = Site.ID) +
+  geom_point() +
+  scale_y_log10()
+
+ggplot(Pb2018, aes(x = Date, y = Daily.Mean.Pb.Concentration)) +
+  geom_point(color = "Site.Name") +
+  scale_fill_gradientn(colors = topo.colors(heat.colors))
+```
+
+## use rbind to put all 9 datasets together, then select columns
+
+```{r compile into 1 dataset}
+library(dplyr)
+
+Pb1981to2018.gathered <- rbind(Pb1981, Pb1982, Pb1983, Pb1984, Pb1985,
+                      Pb1986, Pb1987, Pb1988, Pb1989, Pb1990,
+                      Pb1991, Pb1992, Pb1993, Pb1994, Pb1995,
+                      Pb1996, Pb1997, Pb1998, Pb1999, Pb2000,
+                      Pb2005, Pb2006, Pb2007, Pb2008, Pb2009,
+                      Pb2010, Pb2011, Pb2012, Pb2013, Pb2014,
+                      Pb2015, Pb2016, Pb2017, Pb2018) %>% 
+  select(Date, Site.ID, Site.Name, Daily.Mean.Pb.Concentration, UNITS,
+                                 SITE_LATITUDE, SITE_LONGITUDE)
+
+#write.csv(Pb1981to2018.gathered, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.gathered")
+```
+2
+## turn lat/long into points to map where in the city samples are from
+
+* EPSG code is EPSG:26801: NAD Michigan / Michigan East from http://spatialreference.org/ref/?&search=Michigan
+*need to find a basemap
+*need to make sure that GCS and datum are appropriate
+
+# what are the highest concentrations of Pb in air? Are they near a certain spot?
+
+  *could I possibly get census data or something? could I use google earth engine?
+    * beyond scope of project ;)
+# select what are highest concentrations (for example, highest 10% of samples)
+
+
+```{r convert lat/long to geometry}
+library(mapview)
+library(sf)
+library(leaflet)
+
+Pb1981to2018.points <- st_as_sf(Pb1981to2018.gathered, coords = c("SITE_LATITUDE", "SITE_LONGITUDE"), crs = 26801)
+
+colnames(Pb1981to2018.points)
+
+```
+
+```{r}
+
+```
+
+# should I change the UNITS to something else?
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

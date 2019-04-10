@@ -1,0 +1,120 @@
+---
+title: "DataExploration 5 yrs"
+author: "LFM"
+date: "4/8/2019"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r import, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(dplyr)
+library(tidyverse)
+library(tidyr)
+library(lubridate)
+getwd()
+
+Pb1981 <- read.csv("EPA_Pb_Detroit1981_raw.csv")
+Pb1985 <- read.csv("EPA_Pb_Detroit1985_raw.csv")
+Pb1990 <- read.csv("EPA_Pb_Detroit1990_raw.csv")
+Pb1995 <- read.csv("EPA_Pb_Detroit1995_raw.csv")
+Pb2000 <- read.csv("EPA_Pb_Detroit2000_raw.csv")
+Pb2005 <- read.csv("EPA_Pb_Detroit2005_raw.csv")
+Pb2010 <- read.csv("EPA_Pb_Detroit2010_raw.csv")
+Pb2015 <- read.csv("EPA_Pb_Detroit2015_raw.csv")
+Pb2018 <- read.csv("EPA_Pb_Detroit2018_raw.csv")
+```
+
+```{r summary info}
+str(Pb1981)
+class(Pb1981$Date)
+head(Pb1981)
+summary(Pb1981)
+```
+#The dates shoud be Year/month/day
+```{r attempt to Function Date format for all datasets}
+#how to make this a function?
+x <- Pb1981$Date
+
+fmt <- as.Date(x, format = "%m/%d/%Y")
+
+PbYears.Date <- function(x) {
+    fmt <- as.Date(x, format = "%m/%d/%Y")
+fmt
+  }
+PbYears.Date(c(Pb1981, Pb1985, Pb1990, Pb1995,
+               Pb2000, Pb2005, Pb2010, Pb2015, 
+               Pb2018))
+```
+
+```{r manual Date format}
+Pb1981$Date <- as.Date(Pb1981$Date, format = "%m/%d/%Y")
+Pb1985$Date <- as.Date(Pb1985$Date, format = "%m/%d/%Y")
+Pb1990$Date <- as.Date(Pb1990$Date, format = "%m/%d/%Y")
+Pb1995$Date <- as.Date(Pb1995$Date, format = "%m/%d/%Y")
+Pb2000$Date <- as.Date(Pb2000$Date, format = "%m/%d/%Y")
+Pb2005$Date <- as.Date(Pb2005$Date, format = "%m/%d/%Y")
+Pb2010$Date <- as.Date(Pb2010$Date, format = "%m/%d/%Y")
+Pb2015$Date <- as.Date(Pb2015$Date, format = "%m/%d/%Y")
+Pb2018$Date <- as.Date(Pb2018$Date, format = "%m/%d/%Y")
+```
+
+
+```
+
+#Gather data since there's some columns that are all the same information, or just not useful data (State, County, Daily Observation Count, Daily AQI, Percent Complete, etc.)
+```{r}
+Pb1981.gathered <- Pb1981 %>%
+  select(Date, Site.ID, Site.Name, Daily.Mean.Pb.Concentration, UNITS,
+         SITE_LATITUDE, SITE_LONGITUDE)
+```
+```{r}
+
+```
+
+#Explore the data graphically
+```{r graphical representation}
+library(colormap)
+
+ggplot(Pb1981.gathered) +
+  geom_histogram(aes(x = Daily.Mean.Pb.Concentration), bins = 45)
+
+ggplot(Pb1981.gathered, aes(x = Date, y = Daily.Mean.Pb.Concentration)) +
+  geom_col()
+
+ggplot(Pb1981.gathered, aes(x = Date, y = Daily.Mean.Pb.Concentration)) +
+  geom_point()
+
+ggplot(Pb1981.gathered, aes(x = Date, y = Daily.Mean.Pb.Concentration), fill = Site.ID) +
+  geom_point() +
+  scale_y_log10()
+
+ggplot(Pb2018, aes(x = Date, y = Daily.Mean.Pb.Concentration)) +
+  geom_point(color = "Site.Name") +
+  scale_fill_gradientn(colors = topo.colors(heat.colors))
+```
+
+## use rbind to put all 9 datasets together, then select columns
+
+```{r compile into 1 dataset}
+Pb1981to2018.gathered <- rbind(Pb1981, Pb1985, Pb1990, Pb1995, Pb2000, Pb2005,
+                               Pb2010, Pb2010, Pb2015, Pb2018) %>%
+   select(Date, Site.ID, Site.Name, Daily.Mean.Pb.Concentration, UNITS,
+         SITE_LATITUDE, SITE_LONGITUDE)
+
+write.csv()
+```
+2
+## turn lat/long into points to map where in the city samples are from
+# what are the highest concentrations of Pb in air? Are they near a certain spot?
+# select what are highest concentrations (for example, highest 10% of samples)
+
+```{r }
+
+```
+
+# should I change the UNITS to something else?
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
