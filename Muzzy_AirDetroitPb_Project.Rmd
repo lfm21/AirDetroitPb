@@ -57,6 +57,7 @@ library(lsmeans)
 library(nlme)
 library(multcompView)
 library(trend)
+library(corrplot)
 library(leaflet)
 library(sf)
 library(readr)
@@ -237,9 +238,9 @@ t.test.1smpl.2017
 
 ```
 
-#There's two sites with the largest datasets over the longest period of time. A comparison of these datasets was done to determine how different the variance between them may be. First Wilk-Shapiro tests are done, then an F test was performed. The result is that the variance between the two populations is different. 
+#Two sites have the largest datasets because they were sampled over the longest period of time. A comparison of these datasets was done to determine how different the variance between them may be. First Wilk-Shapiro tests are done, then an F test was performed. The result is that the variance between the two populations is different. 
 #from the graph, it seems like we don't have a normal distribution with these datasets, so we should proceed with a 
-```{r 2 way t-test on big gathered dataset}
+```{r 2-way t-test on big gathered dataset, echo=TRUE}
 #find which sites have most observations and filter them 
 summary(Pb1981to2018.points$Site.Name)
 
@@ -270,20 +271,76 @@ summary(lm.Pb.large.sets)
 
 ```
 
-#One-way and two-way ANOVAs were run after the Shapiro tests to determine the level of variance.
-```{r ANOVAs 1984, 1990, 2006, 2017}
+```{r 1-way ANOVA, echo=TRUE}
+Pb1981to2018.anova <- 
+  lm(Pb1981to2018.points$Daily.Mean.Pb.Concentration ~ 
+       Pb1981to2018.points$Site.ID)
+summary(Pb1981to2018.anova)
 
-Pb1984.anova <- anova(Pb1984, )
+Pb1981to2018.anova2 <- 
+  aov(Pb1981to2018.points$Daily.Mean.Pb.Concentration ~ 
+       Pb1981to2018.points$Site.ID)
+summary(Pb1981to2018.anova2)
 
-Pb.1990.anova
+Pb1981to2018.anova3 <- 
+  lme(Pb1981to2018.points$Daily.Mean.Pb.Concentration ~ 
+       Pb1981to2018.points$Site.ID)
+summary(Pb1981to2018.anova3)
+```
 
-Pb2006.anova
+```{r 2-way ANOVA, using SiteID and month, echo=TRUE}
+#THIS IS PROB THE WRONG WAY TO DO THIS: I NEED TO HAVE 2 CATEGORIES, LIKE PETER LAKE AND PAUL LAKE: MAYBE FILTER TO A 1980S AND 2010S DATASET?? OR FILTER ONE YEAR'S  MONTH?
 
-Pb2017.anova
+Pb2wayanova.lm <- lm(Pb1981to2018.points$Daily.Mean.Pb.Concentration ~ 
+       Pb1981to2018.points$Site.ID + Pb1981to2018.points$month)
+summary(Pb2wayanova.lm)
+
+Pb2wayanova.aov <- aov(Pb1981to2018.points$Daily.Mean.Pb.Concentration ~ 
+       Pb1981to2018.points$Site.ID + Pb1981to2018.points$month)
+summary(Pb2wayanova.aov)
+  
 ```
 
 
-```{r 4.2 - Pettit, echo=TRUE}
+#ANCOVA run after the Shapiro tests to determine the level of co-variance. The linear models explained about 31% of the covariance here.
+```{r ANCOVAs, echo=TRUE}
+
+#is there co-variance btwn date and site?
+Pb1981to2018.ancova <- lm(data = Pb1981to2018.points, 
+                          Daily.Mean.Pb.Concentration ~ Date + Site.ID)
+summary(Pb1981to2018.ancova) 
+
+#is there an interaction btwn date and site?
+Pb1981to2018.interaction <- lm(data = Pb1981to2018.points, 
+                               Daily.Mean.Pb.Concentration ~ Date * Site.ID)
+summary(Pb1981to2018.interaction) #explains about 31% of the variance
+
+
+Pb.1984.ancova
+Pb.1990.ancova
+Pb2006.ancova
+Pb2017.ancova
+
+
+TNancova.main <- lm(data = PeterPaul.chem.nutrients, tn_ug ~ lakename + depth) #main effect (we can tell by the + sign) using depth as continuous rather than categorical since we have one categ already
+summary(TNancova.main) #TN = 353 + 0(depth)for Paul + 136for Peter + E, only explaining 9% of variance
+
+# interaction effects
+TNancova.interaction <- lm(data = PeterPaul.chem.nutrients, tn_ug ~ lakename * depth)
+summary(TNancova.interaction)
+
+
+TNplot <- ggplot(PeterPaul.chem.nutrients, aes(x = depth, y = tn_ug, color = lakename)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) + #if no color specified, it gave us 2 lines, if color = "something" it gives us 1 line
+  xlim(0, 10)
+print(TNplot)
+```
+
+
+```{r 4.2 - Spearmans rho, echo=TRUE}
+cor.test(Pb1981to2018.points$Daily.Mean.Pb.Concentration, 
+         Pb1981to2018.points$Site.ID, method = "spearman", exact = FALSE)
 
 ```
 
@@ -306,7 +363,7 @@ Pb.wilcox
 
 ```
 
-```{r 5.3 thrid final graph, echo=FALSE}
+```{r 5.3 third final graph, echo=FALSE}
 
 ```
 
