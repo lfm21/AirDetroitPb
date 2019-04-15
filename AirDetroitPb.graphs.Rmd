@@ -1,0 +1,82 @@
+---
+title: "AirPb.Detroit.graphs"
+author: "me"
+date: "4/11/2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r read in}
+getwd()
+Pb1981to2018 <- read.csv("./EPA_Pb_data_Processed/Pb1981to2018.points.csv")
+Pb.schools.parks <- read.csv("./EPA_Pb_data_Processed/Pb.schools.parks.csv")
+
+```
+
+```{r facet wrap attempt }
+Pb.schools.parks.facet <- ggplot(Pb.schools.parks, aes(x = year, 
+                                                       y = Daily.Mean.Pb.Concentration,
+                                                       color = Site.Name)) +
+  geom_dotplot(alpha = 0.5) +
+  ylim(0, 1.5) +
+  facet_wrap(vars(Site.Name), ncol = 1, strip.position = "right") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8), 
+        legend.position = "bottom") +
+  labs(x = "Site", y = "Air Lead Level, ug/m3",
+       title = "Schools and Parks Air Lead Levels, Detroit 1981-2018")
+  print(Pb.schools.plot)
+```
+
+```{r}
+#summary(Pb.schools.parks$Site.Name) #6 sites
+
+Pb.compare.schools <- ggplot(Pb.schools.parks, 
+                           aes(x = Daily.Mean.Pb.Concentration, y = year,
+                               fill = Site.Name)) +
+  geom_point(aes(), size = 0.5, alpha = 0.5) +
+  facet_wrap(vars(Site.Name), scale = "free y", ncol = 1, strip.position = "right") +
+  scale_fill_gradientn(colours = c("steelblue", "tomato")) +
+  labs(x = "Lead Concentration ug/m3", y = "Year") +
+  theme(axis.line.x = element_line(color = "black"), legend.position = "bottom", 
+        legend.title = "Park or School Site")
+
+print(Pb.compare.schools)
+```
+
+
+#I need to divide PbConc into quantiles
+```{r}
+Pb.schools.parks.hist <- ggplot(Pb.schools.parks) +
+  geom_point(aes(x = year, y = Daily.Mean.Pb.Concentration), color = Site.Name) +
+  facet_wrap(vars(), ncol = 1, strip.position = "right") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8), 
+        legend.position = "bottom") 
+
+print(Pb.schools.parks.hist)
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

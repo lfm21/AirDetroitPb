@@ -26,6 +26,13 @@ library(dplyr)
 library(tidyverse)
 library(tidyr)
 library(lubridate)
+install.packages("sf")
+install.packages("raster")
+install.packages("spData")
+devtools::install_github("Nowosad/spDataLarge")
+library(sf)
+library(spData)
+library(raster)
 getwd()
 ```
 
@@ -71,7 +78,7 @@ Pb2017 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2017_raw.csv")
 Pb2018 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2018_raw.csv")
 ```
 
-```{r attempt at fun for reading csv}
+```{r attempt at function for reading csv}
 get <- Pb1981
 readin <- read.csv("EPA_Pb_Detroit1981_raw.csv")
 
@@ -189,19 +196,21 @@ Pb1981to2018.gathered <- rbind(Pb1981, Pb1982, Pb1983, Pb1984, Pb1985,
   select(Date, Site.ID, Site.Name, Daily.Mean.Pb.Concentration, UNITS,
                                  SITE_LATITUDE, SITE_LONGITUDE)
 
-#write.csv(Pb1981to2018.gathered, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.gathered")
+write.csv(Pb1981to2018.gathered, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.gathered.csv")
 ```
 2
 ## turn lat/long into points to map where in the city samples are from
 
-* EPSG code is EPSG:26801: NAD Michigan / Michigan East from http://spatialreference.org/ref/?&search=Michigan
-*need to find a basemap
+* Detroit CRS = 4326 (from http://gis-michigan.opendata.arcgis.com/datasets/D3::master-plan-neighborhoods-detroit; 
+metadata: http://services2.arcgis.com/HsXtOCMp1Nis1Ogr/arcgis/rest/services/Detroit_Master_Plan_Neighborhoods/FeatureServer/0 )
+
 *need to make sure that GCS and datum are appropriate
 
 # what are the highest concentrations of Pb in air? Are they near a certain spot?
 
-  *could I possibly get census data or something? could I use google earth engine?
+ *could I possibly get census data or something? could I use google earth engine?
     * beyond scope of project ;)
+    
 # select what are highest concentrations (for example, highest 10% of samples)
 
 
@@ -210,24 +219,106 @@ library(mapview)
 library(sf)
 library(leaflet)
 
+Pb1981to2018.points <- st_as_sf(Pb1981to2018.gathered, coords = c("SITE_LATITUDE", "SITE_LONGITUDE"), crs = 4326)
+```
 
-Pb1981to2018.points <- st_as_sf(Pb1981to2018.gathered, coords = c("SITE_LATITUDE", "SITE_LONGITUDE"), crs = 26801)
+
+```{r add something to unnamed site Site.Name column}
+
+st_crs(Pb1981to2018.points) #EPSG: 4326 proj4string: "+proj=longlat +datum=WGS84 +no_defs"
 
 colnames(Pb1981to2018.points)
 
+#write.csv(Pb1981to2018.points, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.points.csv")
+
 ```
+
+```{r COME BACK TO THIS}
+
+class(Pb1981to2018.points$Site.Name) #factor
+
+select_if(Pb1981to2018.points, Site.Name == "	") %>%
+  
+rename(Pb1981to2018.points$Site.Name, "PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS
+")
+```
+
+
+```{r add basemap and plot points on it}
+library(spData)
+library(spDataLarge)
+#EPSG:26801: NAD Michigan / Michigan East
+
+Detroitmap.1 <- st_read("./Master_Plan_Neighborhoods_Detroit/Master_Plan_Neighborhoods_Detroit.shp")
+st_crs(Detroitmap.1)
+plot(Detroitmap.1)
+plot(Detroitmap.1["NHOOD"])
+
+Pbneighborhood.1981 <- ggplot() +
+  #geom_sf(data = Detroitmap.1, col = "blue") +
+  geom_sf(data = Pb1981, col = "red") 
+  plot(Pbneighborhood.1981$geometry)
+
+
+```
+
+```{r parks schools facet}
+
+Pb.parks.schools.plot <- ggplot(Pb.parks.schools, 
+                           aes(x = year, y = Daily.Mean.Pb.Concentration,
+                               color = year)) +
+  geom_point(aes(), size = 0.5, alpha = 0.5) +
+  facet_wrap(vars(Site.Name), scales = "free_y", ncol = 1, strip.position = "right") +
+  scale_color_viridis(option = "magma") +
+  scale_y_log10() +
+  labs(x = "Year", y = "Lead Concentration ug/m3") +
+  theme(axis.line.x = element_line(color = "black"), legend.position = "bottom")
+
+print(Pb.parks.schools.plot)
+```
+
+```{r Schools Parks Church}
+Pb.schools.parks <-  Pb1981to2018.points %>%
+  filter(Site.Name %in% c("PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS", 
+                          "Allen Park", "Eliza Downwind", "Southwestern H.S.", 
+                          "NMH48217 NEW MT HERMAN CHURCH", "River Rouge")) %>%
+  mutate(month = month(Date), year = year(Date)) 
+
+  Pb.schools.parks.plot <- ggplot(schools.parks, 
+                           aes(x = year, y = Daily.Mean.Pb.Concentration,
+                               color = year)) +
+  geom_point(aes(), size = 0.5, alpha = 0.5) +
+  facet_wrap(vars(Site.Name), scales = "free_y", ncol = 1, strip.position = "right") +
+  scale_color_viridis(option = "cividis") +
+  scale_y_log10() +
+  labs(x = "Year", y = "Lead Concentration ug/m3") +
+  theme(axis.line.x = element_line(color = "black"), legend.position = "bottom")
+```
+
+
+```{r parkschools}
+Pb.parks.schools.plot <- ggplot(Pb.parks.schools, 
+                           aes(x = year, y = Daily.Mean.Pb.Concentration,
+                               color = year)) +
+  geom_point(aes(), size = 0.5, alpha = 0.5) +
+  facet_wrap(vars(Site.Name), scales = "free_y", ncol = 1, strip.position = "right") +
+  #scale_color_viridis(option = "cividis") +
+  scale_y_log10() +
+  labs(x = "Year", y = "Lead Concentration ug/m3") +
+  theme(axis.line.x = element_line(color = "black"), legend.position = "bottom")
+
+print(Pb.parks.schools.plot)
+```
+
 
 ##find out what SC and LC mean - NO NEED TO SPREAD, probably
 ```{r spread UNITS into LC and SC columns}
 
-Pb1981to2018.spread <- spread(Pb1981to2018.points, UNITS, fill = NA, convert = FALSE, drop = TRUE, sep = NULL)
+#Pb1981to2018.spread <- spread(Pb1981to2018.points, UNITS, fill = NA, convert = FALSE, drop = TRUE, sep = NULL)
 
-Pb1981to2018.spread <- data_frame(x = c("ug/m3 SC", "ug/m3 LC"), y = 5:6)
-Pb1981to2018.spread %>% spread(x, y)
+#Pb1981to2018.spread <- data_frame(x = c("ug/m3 SC", "ug/m3 LC"), y = 5:6)
+#Pb1981to2018.spread %>% spread(x, y)
 #output was a tibble that made no sense
-
-df <- data_frame(x = c('a', 'b'), y = 1:2)
-df %>% spread(x, y) 
 
 #Error in spread(Pb1981to2018.points, "ug/m3 SC", "ug/m3 LC") : could not find function "spread" - spread is in dplyr package, right?
 #??spread
@@ -244,8 +335,9 @@ Pb.compare.units <- ggplot(Pb1981to2018.points,
                            aes(x = Date, y = Daily.Mean.Pb.Concentration,
                                color = Site.Name)) +
   geom_point(aes(), size = 0.5, alpha = 0.5) +
+  ylim(0, 1.5) +
   facet_wrap(vars(UNITS), scales = "free_y", ncol = 1, strip.position = "right") +
-  #scale_color_viridis(option = "cividis") +
+  colorRamp(heat.colors(4, alpha=1)) +
   scale_y_log10() +
   labs(x = "Year", y = "Lead Concentration ug/m3") +
   theme(axis.line.x = element_line(color = "black"), legend.position = "bottom")
@@ -257,6 +349,10 @@ print(Pb.compare.units)
 ```{r color tests}
 #install.packages("colormap")
 #install.packages("RColorBrewer")
+#install.packages("grDevices")
+#install.packages("colorRamps")
+library("colorRamps")
+library("grDevices") #not available
 library("RColorBrewer") 
 library("colormap") 
 library("colorspace")
@@ -265,15 +361,50 @@ library("viridis")
 
 ```
 
+```{r}
+Pb.compare.schools2 <- ggplot(Pb.schools.parks, 
+                              aes(x = year, y = Daily.Mean.Pb.Concentration,
+                 color = Site.Name)) +
+  geom_point(Pb.schools.parks, aes(x = year, y = Daily.Mean.Pb.Concentration,
+                 color = Site.Name), size = 0.5, alpha = 0.5, ylim(0, 1.5)) +
+  labs(x = "Year", y ="Lead Concentration ug/m3") +
+  theme(axis.line.x = element_line(color = "black"),
+        legend.position = "bottom") +
+  scale_color_gradient(colors = "rainbow") 
+print(Pb.compare.schools2)
+```
+
+```{r}
+# Southwestern High School, the site sampled most often since 1981
+
+Pb.SWHS <- ggplot(subset(Pb.schools.parks, 
+                         Site.Name == "Southwestern H.S.")) +
+  geom_point(aes(x = year,
+                 y = Daily.Mean.Pb.Concentration, color = Daily.Mean.Pb.Concentration)) +
+  theme(axis.line.x = element_line(color = "black"), 
+        legend.position = "bottom") +
+  scale_color_gradient2(low = "black", mid = "orange", high = "red", midpoint = 0.15) +
+  labs(title = "Lead in Air, Southwestern High School, 1981 - 2018",
+       x = "Year", y = "Lead Concentration ug/m3") 
+
+print(Pb.SWHS)
+```
+
+
 ```{r info about gathered dataset}
-dim(Pb1981to2018.gathered) #[1] 5418 rows of 7 columns, 37 years of data, sample taken every 2.49 days
+dim(Pb1981to2018.gathered) #[1] 5418 rows of 7 columns, 37 years of data, sample taken 10 days or so
 summary(Pb1981to2018.gathered$Site.Name) #12 sites
 summary(Pb1981to2018.gathered$Daily.Mean.Pb.Concentration)
 mean(Pb1981to2018.gathered$Daily.Mean.Pb.Concentration) #[1] 0.04424621
 
-Mystery.site <- subset(Pb1981to2018.gathered, Site.ID = 261630020, select = c("1981-01-01":"1991-12-31"), na.rm = TRUE)
+Mystery.site <- subset(Pb1981to2018.gathered, Site.ID == 261630020,
+                       na.rm = TRUE)
+Mystery.site$Site.Name <- "(unnamed site)"
 
-#Pb1981to1991 <- Pb1981to2018.gathered %>% filter(Date %in% c("1981-01-01":"1991-12-31"), na.rm = TRUE) #doesn't work
+
+
+select = c("1981-01-01":"1991-12-31")
+Pb1981to1991 <- Pb1981to2018.gathered %>% filter(Date %in% c("1981-01-01":"1991-12-31"), na.rm = TRUE) #doesn't work
 
 ```
 
@@ -306,32 +437,52 @@ Pb.schools.plot <- ggplot(Pb.schools, aes(x = Site.Name,
                                           y = Daily.Mean.Pb.Concentration, color = Site.ID)) +
   geom_point(aes(), size = 0.5, alpha = 0.5) +
   scale_y_log10() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8), 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 11), 
         legend.position = "bottom") +
   labs(x = "Site", y = "Air Lead Level, ug/m3")
   print(Pb.schools.plot)
 
 ```
 
-```{r schools.parks facet wrap}
-summary(Pb1981to2018.points$Site.Name)
+```{r schools.parks adding month and year}
+library("lubridate") 
 
-Pb.schools.parks <-  filter(Pb1981to2018.points, 
-                      Site.Name %in% c("Southwestern H.S.",
-                                       "PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS",
-                                       "Allen Park", "Eliza Downwind", 
-                                       "NMH48217 NEW MT HERMAN CHURCH", "River Rouge"))
-  
+#summary(Pb1981to2018.points$Site.Name)
+
+Pb.schools.parks <-  Pb1981to2018.points %>%
+  filter(Site.Name %in% c("PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS", 
+                          "Allen Park", "Eliza Downwind", "Southwestern H.S.", 
+                          "NMH48217 NEW MT HERMAN CHURCH", "River Rouge")) %>%
+  mutate(month = month(Date), year = year(Date))
+
+#write.csv(Pb1981to2018.gathered, row.names = FALSE, "./EPA_Pb_data_Processed/Pb.schools.parks.csv")
+```
+ 
+
+```{r - facet NOT WORKING for facet-wrap and y scale}
 Pb.schools.parks.facet <- ggplot(Pb.schools.parks) +
-  geom_point(aes(x = Site.Name, y = Daily.Mean.Pb.Concentration, fill = Date),
-             size = 0.5, alpha = 0.5) +
-  facet_grid(rows = vars(Site.Name),
+  geom_point(aes(x = year, y = Daily.Mean.Pb.Concentration, color = Site.Name,
+             size = 0.5, alpha = 0.5)) +
+  facet_wrap(vars(Site.Name),
              scales = "free_y", ncol = 1, strip.position = "right") +
-  #scale_y_log10() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8), 
         legend.position = "bottom") +
-  labs(x = "Site", y = "Air Lead Level, ug/m3", title = )
-  print(Pb.schools.plot)
+  labs(x = "Site", y = "Air Lead Level, ug/m3",
+       title = "Schools and Parks Air Lead Levels, Detroit 1981-2018")
+  print(Pb.schools.parks.facet)
+```
+
+
+```{r}
+Pb.schools.parks.violin <- ggplot(Pb.schools.parks, 
+                                 aes(x = Site.Name, y = Daily.Mean.Pb.Concentration)) +
+  geom_violin() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8), 
+        legend.position = "bottom", 
+        title = "Schools and Parks Air Lead Levels, Detroit 1981-2018")
+ 
+  print(Pb.schools.parks.violin)
+
 ```
 
 
@@ -352,7 +503,7 @@ print(Pb.plot2)
 ```
 
 
-```{r}
+```{r extra code}
 cut(Pb1981to2018.points$Daily.Mean.Pb.Concentration, 
       breaks = quantile(Pb1981to2018.points$Daily.Mean.Pb.Concentration,
                         c(0, 0.01, 0.25, 0.5, 1)))

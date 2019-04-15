@@ -1,0 +1,322 @@
+---
+title: How has the "Motor City" of Detroit, MI, area experienced a decrease in air
+  particulate lead over time?
+author: "Laurie Muzzy"
+fontsize: 12pt
+output:
+  word_document: default
+  pdf_document:
+    fig_caption: yes
+    keep_tex: yes
+    number_sections: yes
+mainfont: Times New Roman
+geometry: margin=2.54cm
+subtitle: https://github.com/lfm21/AirDetroitPb
+abstract: Tetraethyl lead (TEL) was completely phased out of gasoline in 1995; air
+  lead levels have decreased 98% from 1980 to 2014. In addition to dramatically decreased airborne lead concentrations, another indicator of progress in the reduction of
+  airborne lead in the environment is the drop in children's blood lead levels over
+  time. Since the late 1970s, average blood lead concentration for children aged 1
+  to 5 have dropped significantly, from about 15 micrograms per deciliter (µg/dL)
+  to less than 1 µg/dL. On September 16, 2016, EPA announced its decision to retain,
+  without revision, the national ambient air quality standards (NAAQS) for lead of
+  0.15 ug/m3, in terms of a 3-month average concentration. I would like to see how
+  the Detroit, MI, area (known as Motor City) has experienced a decrease in air lead
+  levels over time.
+---
+
+<Information in these brackets are used for annotating the RMarkdown file. They will not appear in the final version of the PDF document>
+
+\newpage
+\tableofcontents 
+\newpage
+\listoftables 
+\newpage
+\listoffigures 
+\newpage
+
+<Setup the global options for the R chunks in your document>
+
+<Note: set up autoreferencing for figures and tables in your document>
+
+```{r setup, include=FALSE}
+# Set your working directory
+setwd("~/Desktop/Envtl_Data_Analytics/AirDetroitPb")
+
+# Load your packages
+library(dplyr)
+library(tidyverse)
+library(tidyr)
+library(ggplot2)
+library(viridis)
+library(viridisLite)
+library(gridExtra)
+library(colorRamps)
+library(mapview)
+library(lubridate)
+library(lsmeans)
+library(nlme)
+library(multcompView)
+library(trend)
+library(leaflet)
+library(sf)
+library(readr)
+library(knitr)
+
+# Set your ggplot theme
+Pbtheme <- theme_minimal(base_size = 11) +
+theme(axis.text = element_text(color = "dark gray"),
+      legend.position = "bottom")
+  
+theme_set(Pbtheme)
+
+```
+
+
+# Research Question and Rationale
+
+<Paragraph detailing the rationale for your analysis. What is the significant application and/or interest in this topic? Connect to environmental topic(s)/challenge(s).>
+
+
+<Paragraph detailing your research question(s) and goals. What do you want to find out? Include a sentence (or a few) on the dataset you are using to answer this question - just enough to give your reader an idea of where you are going with the analysis.>
+
+\newpage
+
+# Dataset Information
+
+<Information on how the dataset for this analysis were collected, the data contained in the dataset, and any important pieces of information that are relevant to your analyses. This section should contain much of same information as the README file for the dataset but formatted in a way that is more narrative.>
+
+<Add a table that summarizes your data structure. This table can be made in markdown text or inserted as a `kable` function in an R chunk. If the latter, do not include the code used to generate your table.>
+
+Raw datasets (yearly 1981-2018) | Processed               | Purpose
+----------------------------    | -------------           | -------------
+Pb1981                          |Pb1981to2018.gathered    |
+Pb1982                          |                         |
+Pb1983                          |Pb1981to2018.points      |
+...                             |
+Pb2017                          |
+Pb2018                          |
+
+```{r kable table, echo=FALSE}
+AirPbDetroit.table <- kable(Pb1981, "markdown",
+                            #digits = getOption("7"), align = "c", 
+                            caption = "EPA Air Lead in Detroit, 1981-2018", 
+                            escape = TRUE)
+```
+\newpage
+# Exploratory Data Analysis and Wrangling
+
+<Include R chunks for 5+ lines of summary code (display code and output), 3+ exploratory graphs (display graphs only), and any wrangling you do to your dataset(s).> 
+
+<Include text sections to accompany these R chunks to explain the reasoning behind your workflow, and the rationale for your approach.>
+
+#It is necessary to look at summaries of the datasets. The first dataset was from 1981, so I chose that one to examine the column names, dimensions, structure, and class type (sample date must be converted of class Date).
+```{r 1 - summary of example 1981 dataset}
+
+str(Pb1981)
+colnames(Pb1981) 
+class(Pb1981$Date)
+head(Pb1981)
+summary(Pb1981)
+dim(Pb1981)
+
+```
+
+```{r 2.1 - exploratory histogram to see Pb concentration, using 1981 dataset}
+
+ggplot(Pb1981) +
+  geom_histogram(aes(x = Daily.Mean.Pb.Concentration), bins = 45) +
+  labs(title = "Air Lead in Detroit, 1981")
+
+```
+
+```{r 2.2 - histogram to see Pb concentration in a more recent year}
+
+ggplot(Pb2009) +
+  geom_histogram(aes(x = Daily.Mean.Pb.Concentration), bins = 45) +
+  labs(title = "Air Lead in Detroit, 2009")
+```
+
+```{r 2.3 - point graph to show differences between sites and months, using dataset with the most samples}
+
+ggplot(Pb2018, aes(x = Date, y = Daily.Mean.Pb.Concentration,
+       color = Site.ID)) +
+  geom_point(alpha = 0.75) +
+  scale_color_viridis("magma") +
+  scale_fill_manual(name = "Site code", labels = c("school", "park")) +
+  scale_y_log10() +
+  theme(legend.position = "right") +
+  labs(title = "Air Lead in Detroit, 2018")
+
+```
+
+#I chose to test the wrangling on the 1981 dataset, then used rbind to put all 37 datasets together. Then I converted the coordinate columns to geometry points so they can be plotted on a map; and added a month and year column in order to see if there's seasonal change.
+```{r 3.1 - wrangling example dataset}
+Pb1981$Date <- as.Date(Pb1981$Date, format = "%m/%d/%Y")
+
+Pb1981.gathered <- Pb1981 %>%
+  select(Date, Site.ID, Site.Name, Daily.Mean.Pb.Concentration, 
+         UNITS, SITE_LATITUDE, SITE_LONGITUDE)
+```
+
+```{r 3.2 - wrangling all 37 datasets }
+#thirty-seven datasets were read (this code was very large, so it's not included), then collected into one gathered dataset, and ensured that sample date was Date class.
+
+Pb1981to2018.gathered <- rbind(Pb1981, Pb1982, Pb1983, Pb1984, Pb1985,
+                      Pb1986, Pb1987, Pb1988, Pb1989, Pb1990,
+                      Pb1991, Pb1992, Pb1993, Pb1994, Pb1995,
+                      Pb1996, Pb1997, Pb1998, Pb1999, Pb2000,
+                      Pb2005, Pb2006, Pb2007, Pb2008, Pb2009,
+                      Pb2010, Pb2011, Pb2012, Pb2013, Pb2014,
+                      Pb2015, Pb2016, Pb2017, Pb2018) %>% 
+  select(Date, Site.ID, Site.Name, Daily.Mean.Pb.Concentration, UNITS,
+                                 SITE_LATITUDE, SITE_LONGITUDE) 
+
+#as.Date(Pb1981to2018.gathered$Date, format = "%m/%d/%Y")
+class(Pb1981to2018.gathered$Date) #Date
+summary(Pb1981to2018.points$Site.Name) #11 named sites, a few unnamed
+
+#write.csv(Pb1981to2018.gathered, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.gathered.csv")
+
+```
+
+```{r 3.3 - converting coord columns to geometry, adding year and month columns }
+
+Pb1981to2018.points <- st_as_sf(Pb1981to2018.gathered, coords = c("SITE_LATITUDE", "SITE_LONGITUDE"), crs = 26801) %>% 
+  mutate(month = month(Date), year = year(Date)) 
+
+colnames(Pb1981to2018.points)
+
+write.csv(Pb1981to2018.points, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.points.csv")
+```
+#I want to plot all the points on a map
+```{r make map of }
+
+
+```
+
+#There are a few variables that have a Site.Id but no Site.Name. I'd like to fill the row with something.
+```{r NOT WORKING YET: fill in blank variables with something}
+#don't know how to do this
+#Pb1981to2018.complete <- (Pb1981to2018.points$Site.Name, Site.Name == "", "unnamed site") 
+#subset(Site.ID == 261630020, na.rm = TRUE)
+```
+
+\newpage
+
+# Analysis
+<Include R chunks for 3+ statistical tests (display code and output) and 3+ final visualization graphs (display graphs only).>
+#Is there a normal distribution of Daily Mean Lead Concentration values in different decades?
+#A Wilk-Shapiro test was done on a few separate datasets. The Shapiro test can only run between 3 and 5000, so the Pb1981to2018.gathered dataset is slightly too large. Instead I'll run Shapiro on one dataset from each decade that has a realtively high number of observations. T-tests were then done to determine if the mean was indeed lower than 1.0ug/m3.
+#For all of these years, the p-values were very low, so we can reject the null hypothesis, as the alternative is true: the mean air lead concentration in these years was less than 1.0ug/m3.
+#From 1984 to 1990, the mean Pb concentration was an order of magnitude lower;
+```{r 4.1 - Wilk-Shapiro test: normal distribution, echo=TRUE}
+#look at dataset from the 1980s, the 90s, the 2000s, and then a more recent dataset
+shapiro.test(Pb1984$Daily.Mean.Pb.Concentration)
+#W = 0.88254, p-value = 3.677e-10
+t.test.1smpl.1984 <- t.test(Pb1984$Daily.Mean.Pb.Concentration,
+                            mu = 50, alternative = "less")
+t.test.1smpl.1984 # -Inf 0.2244882, mean of x 0.206
+
+shapiro.test(Pb1990$Daily.Mean.Pb.Concentration)
+#W = 0.28426, p-value < 2.2e-16
+t.test.1smpl.1990 <- t.test(Pb1990$Daily.Mean.Pb.Concentration,
+                            mu = 50, alternative = "less")
+t.test.1smpl.1990
+
+shapiro.test(Pb2006$Daily.Mean.Pb.Concentration)
+#W = 0.10127, p-value < 2.2e-16
+t.test.1smpl.2006 <- t.test(Pb2006$Daily.Mean.Pb.Concentration,
+                            mu =50, alternative = "less")
+t.test.1smpl.2006
+
+shapiro.test(Pb2017$Daily.Mean.Pb.Concentration)
+#W = 0.36213, p-value < 2.2e-16
+t.test.1smpl.2017 <- t.test(Pb2017$Daily.Mean.Pb.Concentration,
+                            mu = 50, alternative = "less")
+t.test.1smpl.2017
+
+```
+
+#There's two sites with the largest datasets over the longest period of time. A comparison of these datasets was done to determine how different the variance between them may be. First Wilk-Shapiro tests are done, then an F test was performed. The result is that the variance between the two populations is different. 
+#from the graph, it seems like we don't have a normal distribution with these datasets, so we should proceed with a 
+```{r 2 way t-test on big gathered dataset}
+#find which sites have most observations and filter them 
+summary(Pb1981to2018.points$Site.Name)
+
+Pb.large.sets <- Pb1981to2018.points %>%
+  filter(Site.Name %in% c("Southwestern H.S.",
+                          "PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS"))
+Pb.large.sets.plot <- 
+  ggplot(Pb.large.sets, 
+         aes(x = Daily.Mean.Pb.Concentration, color = Site.Name)) +
+  geom_freqpoly(stat = "count", alpha = 0.5) +
+  labs(x = "Lead concentration, ug/m3", y = "number of observations", title = "Sites in Detroit Largest Sample Size of Air Lead Data")
+print(Pb.large.sets.plot)
+
+#statistical comparison of the 2 largest sample sets
+shapiro.test(Pb.large.sets$Daily.Mean.Pb.Concentration
+             [Pb.large.sets$Site.Name == "Southwestern H.S."])
+
+shapiro.test(Pb.large.sets$Daily.Mean.Pb.Concentration
+             [Pb.large.sets$Site.Name == 
+                 "PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS"])
+
+var.test(Pb.large.sets$Daily.Mean.Pb.Concentration ~
+           Pb.large.sets$Site.Name)
+
+lm.Pb.large.sets <- lm(Pb.large.sets$Daily.Mean.Pb.Concentration ~
+                          Pb.large.sets$Site.Name)
+summary(lm.Pb.large.sets)
+
+```
+
+#One-way and two-way ANOVAs were run after the Shapiro tests to determine the level of variance.
+```{r ANOVAs 1984, 1990, 2006, 2017}
+
+Pb1984.anova <- anova(Pb1984, )
+
+Pb.1990.anova
+
+Pb2006.anova
+
+Pb2017.anova
+```
+
+
+```{r 4.2 - Pettit, echo=TRUE}
+
+```
+
+#A Wilcoxon test was performed on datasets that were not normally distributed
+```{r 4.3 - Wilcoxon(Mann-Whitney) test, echo=TRUE}
+
+Pb.wilcox <- 
+  wilcox.test(Pb1981to2018.points$Daily.Mean.Pb.Concentration,
+              mu = 50, alternative = "less")
+Pb.wilcox 
+
+```
+
+#add a basemap and GCS (WGS84)
+```{r 5.1 first final graph, echo=FALSE}
+
+```
+
+```{r 5.2 second final graph, echo=FALSE}
+
+```
+
+```{r 5.3 thrid final graph, echo=FALSE}
+
+```
+
+<Include text sections to accompany these R chunks to explain the reasoning behind your workflow, rationale for your approach, and the justification of meeting or failing to meet assumptions of tests.>
+
+
+\newpage
+
+# Summary and Conclusions
+<Summarize your major findings from your analyses. What conclusions do you draw from your findings? Make sure to apply this to a broader application for the research question you have answered.>
+
+
+
