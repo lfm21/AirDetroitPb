@@ -1,5 +1,5 @@
 ##AirDetroitPb
-A study on lead levels in the air in Detroit, MI, over the past 35 years.
+A study on lead levels in the air in Detroit, MI, over the past four decades.
 
 ##Summary
 In addition to dramatically decreased airborne lead concentrations, another indicator of

@@ -93,7 +93,7 @@ head(Pb1981)
 summary(Pb1981)
 dim(Pb1981)
 ```
-#The dates shoud be Year/month/day
+###The dates shoud be Year/month/day
 ```{r as.Date for all datasets}
 #how to make this a function?
 x <- Pb1981$Date
@@ -152,14 +152,14 @@ Pb2016$Date <- as.Date(Pb2016$Date, format = "%m/%d/%Y")
 Pb2017$Date <- as.Date(Pb2017$Date, format = "%m/%d/%Y")
 Pb2018$Date <- as.Date(Pb2018$Date, format = "%m/%d/%Y")
 ```
-#Gather data since there's some columns that are all the same information, or just not useful data (State, County, Daily Observation Count, Daily AQI, Percent Complete, etc.)
-```{r}
+###Gather data since there's some columns that are all the same information, or just not useful data (State, County, Daily Observation Count, Daily AQI, Percent Complete, etc.)
+```{r make 1981 gathered}
 Pb1981.gathered <- Pb1981 %>%
   select(Date, Site.ID, Site.Name, Daily.Mean.Pb.Concentration, UNITS,
          SITE_LATITUDE, SITE_LONGITUDE)
 ```
 
-#Explore the data graphically
+###Explore the data graphically
 ```{r graphical representation}
 library(colormap)
 
@@ -206,13 +206,6 @@ metadata: http://services2.arcgis.com/HsXtOCMp1Nis1Ogr/arcgis/rest/services/Detr
 
 *need to make sure that GCS and datum are appropriate
 
-# what are the highest concentrations of Pb in air? Are they near a certain spot?
-
- *could I possibly get census data or something? could I use google earth engine?
-    * beyond scope of project ;)
-    
-# select what are highest concentrations (for example, highest 10% of samples)
-
 
 ```{r convert lat/long to geometry}
 library(mapview)
@@ -222,18 +215,19 @@ library(leaflet)
 Pb1981to2018.points <- st_as_sf(Pb1981to2018.gathered, coords = c("SITE_LATITUDE", "SITE_LONGITUDE"), crs = 4326)
 ```
 
-
 ```{r add something to unnamed site Site.Name column}
 
 st_crs(Pb1981to2018.points) #EPSG: 4326 proj4string: "+proj=longlat +datum=WGS84 +no_defs"
 
 colnames(Pb1981to2018.points)
 
+EPA.NCAir.PM25.2018.sitespecific$AQS_PARAMETER_DESC <- "PM2.5"
+
 #write.csv(Pb1981to2018.points, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.points.csv")
 
 ```
 
-```{r COME BACK TO THIS}
+```{r renaming blank column COME BACK TO THIS}
 
 class(Pb1981to2018.points$Site.Name) #factor
 
@@ -243,22 +237,28 @@ rename(Pb1981to2018.points$Site.Name, "PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS
 ")
 ```
 
-
 ```{r add basemap and plot points on it}
+
+## what are the highest concentrations of Pb in air? Are they near a certain spot?
+
 library(spData)
 library(spDataLarge)
 #EPSG:26801: NAD Michigan / Michigan East
 
-Detroitmap.1 <- st_read("./Master_Plan_Neighborhoods_Detroit/Master_Plan_Neighborhoods_Detroit.shp")
+Detroitmap.1 <- 
+  st_read
+("./Master_Plan_Neighborhoods_Detroit/Master_Plan_Neighborhoods_Detroit.shp")
+
 st_crs(Detroitmap.1)
 plot(Detroitmap.1)
 plot(Detroitmap.1["NHOOD"])
 
+class(Pbneighborhood.1981$geometry)
+
 Pbneighborhood.1981 <- ggplot() +
-  #geom_sf(data = Detroitmap.1, col = "blue") +
+  geom_sf(data = Detroitmap.1, col = "blue") +
   geom_sf(data = Pb1981, col = "red") 
   plot(Pbneighborhood.1981$geometry)
-
 
 ```
 
@@ -266,7 +266,7 @@ Pbneighborhood.1981 <- ggplot() +
 
 Pb.parks.schools.plot <- ggplot(Pb.parks.schools, 
                            aes(x = year, y = Daily.Mean.Pb.Concentration,
-                               color = year)) +
+                               fill = year)) +
   geom_point(aes(), size = 0.5, alpha = 0.5) +
   facet_wrap(vars(Site.Name), scales = "free_y", ncol = 1, strip.position = "right") +
   scale_color_viridis(option = "magma") +
@@ -277,22 +277,29 @@ Pb.parks.schools.plot <- ggplot(Pb.parks.schools,
 print(Pb.parks.schools.plot)
 ```
 
-```{r Schools Parks Church}
-Pb.schools.parks <-  Pb1981to2018.points %>%
+```{r CHILDRISK schools parks churches (6locations)}
+Pb.childrisk <-  Pb1981to2018.points %>%
   filter(Site.Name %in% c("PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS", 
                           "Allen Park", "Eliza Downwind", "Southwestern H.S.", 
                           "NMH48217 NEW MT HERMAN CHURCH", "River Rouge")) %>%
   mutate(month = month(Date), year = year(Date)) 
 
-  Pb.schools.parks.plot <- ggplot(schools.parks, 
-                           aes(x = year, y = Daily.Mean.Pb.Concentration,
-                               color = year)) +
-  geom_point(aes(), size = 0.5, alpha = 0.5) +
-  facet_wrap(vars(Site.Name), scales = "free_y", ncol = 1, strip.position = "right") +
+Pb.childrisk.plot <- ggplot(Pb.childrisk, 
+                            aes(x = year, y = Daily.Mean.Pb.Concentration,
+                               fill = year)) +
+  geom_point(aes(), size = 1, alpha = 0.5) +
+  facet_wrap(vars(Site.Name), 
+             scales = "free_y", ncol = 1, strip.position = "right") +
   scale_color_viridis(option = "cividis") +
+  labs(title = "Air Lead Risk to Children, Detroit parks, 1981-2018",
+       x = "Year", y = "Lead Concentration ug/m3") +
   scale_y_log10() +
-  labs(x = "Year", y = "Lead Concentration ug/m3") +
-  theme(axis.line.x = element_line(color = "black"), legend.position = "bottom")
+  theme(axis.line.x = element_line(color = "black"),
+        legend.position = "bottom") 
+print(Pb.childrisk.plot)
+
+
+#labels = c("Southwestern H.S.","River Rouge Park", "Allen Park", "Dearborn Public Schools", "New Mt. Herman Church", "Eliza Park")
 ```
 
 
@@ -409,7 +416,7 @@ Pb1981to1991 <- Pb1981to2018.gathered %>% filter(Date %in% c("1981-01-01":"1991-
 ```
 
 
-```{r plot geom_point}
+```{r plot geom_point ALL POINTS MEH}
 
 Pb.plot <- ggplot(Pb1981to2018.points, 
                            aes(x = Date, y = Daily.Mean.Pb.Concentration,
@@ -425,13 +432,15 @@ print(Pb.plot)
 
 ```
 
-```{r school sites Pb concn} 
+```{r school sites Pb concn GOOD, CHANGE COLUMN NAMES} 
 #find out what Site.ID 261630020 is
 
 Pb.schools <-  filter(Pb1981to2018.points, 
                       Site.Name %in% c("Southwestern H.S.",
                                        "PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS",
-                                       "Allen Park", "Eliza Downwind"))
+                                       "Allen Park", "Eliza Downwind")) %>% 
+  colnames(c("Southwestern H.S.", ))
+  
   
 Pb.schools.plot <- ggplot(Pb.schools, aes(x = Site.Name, 
                                           y = Daily.Mean.Pb.Concentration, color = Site.ID)) +
@@ -444,7 +453,7 @@ Pb.schools.plot <- ggplot(Pb.schools, aes(x = Site.Name,
 
 ```
 
-```{r schools.parks adding month and year}
+```{r schools.parks adding month and year MEH}
 library("lubridate") 
 
 #summary(Pb1981to2018.points$Site.Name)
@@ -459,7 +468,7 @@ Pb.schools.parks <-  Pb1981to2018.points %>%
 ```
  
 
-```{r - facet NOT WORKING for facet-wrap and y scale}
+```{r - FACET SCHOOLS PARKS CHANGE LEGEND AND Y SCALE}
 Pb.schools.parks.facet <- ggplot(Pb.schools.parks) +
   geom_point(aes(x = year, y = Daily.Mean.Pb.Concentration, color = Site.Name,
              size = 0.5, alpha = 0.5)) +
@@ -473,13 +482,13 @@ Pb.schools.parks.facet <- ggplot(Pb.schools.parks) +
 ```
 
 
-```{r}
+```{r MEH VIOLIN }
 Pb.schools.parks.violin <- ggplot(Pb.schools.parks, 
                                  aes(x = Site.Name, y = Daily.Mean.Pb.Concentration)) +
   geom_violin() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8), 
-        legend.position = "bottom", 
-        title = "Schools and Parks Air Lead Levels, Detroit 1981-2018")
+        legend.position = "bottom") +
+  labs(title = "Schools and Parks Air Lead Levels, Detroit 1981-2018")
  
   print(Pb.schools.parks.violin)
 

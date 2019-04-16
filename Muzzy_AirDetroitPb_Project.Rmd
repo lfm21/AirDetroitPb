@@ -4,11 +4,11 @@ title: How has the "Motor City" of Detroit, MI, area experienced a decrease in a
 author: "Laurie Muzzy"
 fontsize: 12pt
 output:
-  word_document: default
   pdf_document:
     fig_caption: yes
     keep_tex: yes
     number_sections: yes
+  word_document: default
 mainfont: Times New Roman
 geometry: margin=2.54cm
 subtitle: https://github.com/lfm21/AirDetroitPb
@@ -72,37 +72,99 @@ theme_set(Pbtheme)
 
 ```
 
-
 # Research Question and Rationale
-
 <Paragraph detailing the rationale for your analysis. What is the significant application and/or interest in this topic? Connect to environmental topic(s)/challenge(s).>
 
+Children under 6 are extremely vulnerable to lead poisoning, the effects of which show up later in life. Lead exposure and poisoning therefore has large public health, social, and economic ramifications. Tetraethyl lead (TEL) was an additive in gasoline for decades, but growing public health pressures in the United States caused it to be completely phased out of gasoline by 1995. With this reduction of lead in nearly all gasoline, air lead levels have decreased 98% from 1980 to 2014.  In 2016, the U.S. EPA announced revised national ambient air quality standards (NAAQS) for lead of 0.15 ug/m3, in terms of a 3-month average concentration. Despite this ridiculously low concentration standard, and the dramatic decrease in the past four decades, lead still persists in the environment. Lead in paint has been banned in the U.S., but certain airplanes are still permitted to use leaded fuel. My research is interested in what lead concentrations are still extant in the air, especially in a larger American cities, where automobiles are the most common mode of transportation.
 
 <Paragraph detailing your research question(s) and goals. What do you want to find out? Include a sentence (or a few) on the dataset you are using to answer this question - just enough to give your reader an idea of where you are going with the analysis.>
+
+How has the "Motor City" Detroit, MI, area experienced a decrease in air lead levels over time? Where in the city has lead in air been sampled? Are the sample sites in the city at sites where vulnerable populations could be exposed?
 
 \newpage
 
 # Dataset Information
-
 <Information on how the dataset for this analysis were collected, the data contained in the dataset, and any important pieces of information that are relevant to your analyses. This section should contain much of same information as the README file for the dataset but formatted in a way that is more narrative.>
+
+The files were downloaded from https://www.epa.gov/outdoor-air-quality-data/download-daily-data and accessed on 2019-04-04. The area is Detroit-Warren-Dearborn in Michigan, USA. Lead(Pb) in air has been monitored every 12 days, since 1981 in Detroit-Dearborn-Warren area; there is a gap in data collection in the early 2000s. Files in .csv format were downloaded for every year available, which was 1981 until 2018. All files were accessed as .csv files, and named EPAair_Pb_Detroit_YEAR.csv
+Shapefiles of neighborhoods in the area were downloaded from michigan.gov.
+
+
+```{r load packages, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(dplyr)
+library(tidyverse)
+library(tidyr)
+library(lubridate)
+#install.packages("sf")
+#install.packages("raster")
+#install.packages("spData")
+devtools::install_github("Nowosad/spDataLarge")
+library(sf)
+library(spData)
+library(raster)
+getwd()
+``` 
+The function rbind was used to combine all 37 datasets.
+```{r read files, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+Pb1981 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1981_raw.csv")
+Pb1982 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1982_raw.csv")
+Pb1983 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1983_raw.csv")
+Pb1984 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1984_raw.csv")
+Pb1985 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1985_raw.csv")
+Pb1986 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1986_raw.csv")
+Pb1987 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1987_raw.csv")
+Pb1988 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1988_raw.csv")
+Pb1989 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1989_raw.csv")
+Pb1990 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1990_raw.csv")
+Pb1991 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1991_raw.csv")
+Pb1992 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1992_raw.csv")
+Pb1993 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1993_raw.csv")
+Pb1994 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1994_raw.csv")
+Pb1995 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1995_raw.csv")
+Pb1996 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1996_raw.csv")
+Pb1997 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1997_raw.csv")
+Pb1998 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1998_raw.csv")
+Pb1999 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1999_raw.csv")
+Pb2000 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2000_raw.csv")
+Pb2001 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2001_raw.csv")
+Pb2002 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2002_raw.csv")
+Pb2003 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2003_raw.csv")
+Pb2004 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2004_raw.csv")
+Pb2005 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2005_raw.csv")
+Pb2006 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2006_raw.csv")
+Pb2007 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2007_raw.csv")
+Pb2008 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2008_raw.csv")
+Pb2009 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2009_raw.csv")
+Pb2010 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2010_raw.csv")
+Pb2011 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2011_raw.csv")
+Pb2012 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2012_raw.csv")
+Pb2013 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2013_raw.csv")
+Pb2014 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2014_raw.csv")
+Pb2015 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2015_raw.csv")
+Pb2016 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2016_raw.csv")
+Pb2017 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2017_raw.csv")
+Pb2018 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2018_raw.csv")
+```
 
 <Add a table that summarizes your data structure. This table can be made in markdown text or inserted as a `kable` function in an R chunk. If the latter, do not include the code used to generate your table.>
 
-Raw datasets (yearly 1981-2018) | Processed               | Purpose
-----------------------------    | -------------           | -------------
-Pb1981                          |Pb1981to2018.gathered    |
-Pb1982                          |                         |
-Pb1983                          |Pb1981to2018.points      |
-...                             |
-Pb2017                          |
-Pb2018                          |
-
+##Table of processed dataset of every sample from Detroit-Dearborn-Warren area from each year (1981-2018).
 ```{r kable table, echo=FALSE}
-AirPbDetroit.table <- kable(Pb1981, "markdown",
-                            #digits = getOption("7"), align = "c", 
+
+Pb1981to2018.points <- list.files("./EPA_Pb_data_Processed/EPb1981to2018.points.csv", full.names = TRUE)
+
+#Pb1981to2018.points <- read.csv("./EPA_Pb_data_Processed/EPb1981to2018.points.csv")
+
+PbDetroit <- head(Pb1981to2018.points)
+
+AirPbDetroit.table <- kable(PbDetroit, "markdown",align = "l", 
                             caption = "EPA Air Lead in Detroit, 1981-2018", 
-                            escape = TRUE)
+                            escape = TRUE) 
+AirPbDetroit.table
 ```
+
 \newpage
 # Exploratory Data Analysis and Wrangling
 
@@ -110,7 +172,7 @@ AirPbDetroit.table <- kable(Pb1981, "markdown",
 
 <Include text sections to accompany these R chunks to explain the reasoning behind your workflow, and the rationale for your approach.>
 
-#It is necessary to look at summaries of the datasets. The first dataset was from 1981, so I chose that one to examine the column names, dimensions, structure, and class type (sample date must be converted of class Date).
+It is necessary to look at summaries of the datasets. The first dataset was from 1981, so I chose that one to examine the column names, dimensions, structure, and class type (sample date must be converted of class Date).
 ```{r 1 - summary of example 1981 dataset}
 
 str(Pb1981)
@@ -119,7 +181,6 @@ class(Pb1981$Date)
 head(Pb1981)
 summary(Pb1981)
 dim(Pb1981)
-
 ```
 
 ```{r 2.1 - exploratory histogram to see Pb concentration, using 1981 dataset}
@@ -150,13 +211,26 @@ ggplot(Pb2018, aes(x = Date, y = Daily.Mean.Pb.Concentration,
 
 ```
 
-#I chose to test the wrangling on the 1981 dataset, then used rbind to put all 37 datasets together. Then I converted the coordinate columns to geometry points so they can be plotted on a map; and added a month and year column in order to see if there's seasonal change.
-```{r 3.1 - wrangling example dataset}
-Pb1981$Date <- as.Date(Pb1981$Date, format = "%m/%d/%Y")
+I chose to test the wrangling on the 1981 dataset. Then I converted the coordinate columns to geometry points so they can be plotted on a map; and added a month and year column in order to see if there's seasonal change.
+```{r 3.1 - wrangling example datasets}
+#as.Date(Pb1981$Date, format = "%m/%d/%Y") #takes up too much space
 
-Pb1981.gathered <- Pb1981 %>%
-  select(Date, Site.ID, Site.Name, Daily.Mean.Pb.Concentration, 
-         UNITS, SITE_LATITUDE, SITE_LONGITUDE)
+Pb1981.month.yr <- Pb1981 %>% dplyr::select( Date, Site.ID, Site.Name,
+                                             Daily.Mean.Pb.Concentration, UNITS,
+                                             SITE_LATITUDE, SITE_LONGITUDE) %>% 
+  mutate(year = year(Date), month = month(Date)) 
+
+#Pb1981.month.yr <- select(Pb1981, Date, Site.ID, Site.Name,
+                          #Daily.Mean.Pb.Concentration, UNITS,
+                          #SITE_LATITUDE, SITE_LONGITUDE)  %>% 
+  #mutate(year = year(Date), month = month(Date)) 
+
+#as.Date(Pb2018$Date, format = "%m/%d/%Y") #takes up too much space
+Pb2018month.yr <- select(Pb2018, Date, Site.ID, Site.Name,
+                                    Daily.Mean.Pb.Concentration, UNITS,
+                                    SITE_LATITUDE, SITE_LONGITUDE) %>% 
+  mutate(year = year(Date), month = month(Date)) 
+ 
 ```
 
 ```{r 3.2 - wrangling all 37 datasets }
@@ -181,21 +255,14 @@ summary(Pb1981to2018.points$Site.Name) #11 named sites, a few unnamed
 ```
 
 ```{r 3.3 - converting coord columns to geometry, adding year and month columns }
-
 Pb1981to2018.points <- st_as_sf(Pb1981to2018.gathered, coords = c("SITE_LATITUDE", "SITE_LONGITUDE"), crs = 26801) %>% 
   mutate(month = month(Date), year = year(Date)) 
-
 colnames(Pb1981to2018.points)
-
 write.csv(Pb1981to2018.points, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.points.csv")
 ```
-#I want to plot all the points on a map
-```{r make map of }
 
+There are a few variables that have a Site.Id but no Site.Name. I'd like to fill the row with something.
 
-```
-
-#There are a few variables that have a Site.Id but no Site.Name. I'd like to fill the row with something.
 ```{r NOT WORKING YET: fill in blank variables with something}
 #don't know how to do this
 #Pb1981to2018.complete <- (Pb1981to2018.points$Site.Name, Site.Name == "", "unnamed site") 
@@ -204,13 +271,15 @@ write.csv(Pb1981to2018.points, row.names = FALSE, "./EPA_Pb_data_Processed/Pb198
 
 \newpage
 
-# Analysis
+
+## Analysis
 <Include R chunks for 3+ statistical tests (display code and output) and 3+ final visualization graphs (display graphs only).>
-#Is there a normal distribution of Daily Mean Lead Concentration values in different decades?
-#A Wilk-Shapiro test was done on a few separate datasets. The Shapiro test can only run between 3 and 5000, so the Pb1981to2018.gathered dataset is slightly too large. Instead I'll run Shapiro on one dataset from each decade that has a realtively high number of observations. T-tests were then done to determine if the mean was indeed lower than 1.0ug/m3.
-#For all of these years, the p-values were very low, so we can reject the null hypothesis, as the alternative is true: the mean air lead concentration in these years was less than 1.0ug/m3.
-#From 1984 to 1990, the mean Pb concentration was an order of magnitude lower;
-```{r 4.1 - Wilk-Shapiro test: normal distribution, echo=TRUE}
+###Is there a normal distribution of Daily Mean Lead Concentration values in different decades? At different sites? In different months?
+
+A  Shapiro-Wilk test was done on a few separate datasets. The Shapiro test can only run between 3 and 5000, so the Pb1981to2018.gathered dataset is slightly too large. Instead I'll run Shapiro on one dataset from each decade that has a realtively high number of observations. T-tests were then done to determine if the mean was indeed lower than 1.0ug/m3.
+For all of these years, the p-values were very low, so we can reject the null hypothesis, as the alternative is true: the mean air lead concentration in these years was less than 1.0ug/m3.
+From 1984 to 1990, the mean Pb concentration was an order of magnitude lower;
+```{r 4.1 -  Shapiro-Wilk test: normal distribution, echo=TRUE}
 #look at dataset from the 1980s, the 90s, the 2000s, and then a more recent dataset
 shapiro.test(Pb1984$Daily.Mean.Pb.Concentration)
 #W = 0.88254, p-value = 3.677e-10
@@ -229,19 +298,17 @@ shapiro.test(Pb2006$Daily.Mean.Pb.Concentration)
 t.test.1smpl.2006 <- t.test(Pb2006$Daily.Mean.Pb.Concentration,
                             mu =50, alternative = "less")
 t.test.1smpl.2006
-
 shapiro.test(Pb2017$Daily.Mean.Pb.Concentration)
 #W = 0.36213, p-value < 2.2e-16
 t.test.1smpl.2017 <- t.test(Pb2017$Daily.Mean.Pb.Concentration,
                             mu = 50, alternative = "less")
 t.test.1smpl.2017
-
 ```
 
-#Two sites have the largest datasets because they were sampled over the longest period of time. A comparison of these datasets was done to determine how different the variance between them may be. First Wilk-Shapiro tests are done, then an F test was performed. The result is that the variance between the two populations is different. 
-#from the graph, it seems like we don't have a normal distribution with these datasets, so we should proceed with a 
+Two sites have the largest datasets because they were sampled over the longest period of time. A comparison of these datasets was done to determine how different the variance between them may be. 
+First Shapiro-Wilk tests then an F test was performed. The result is that the variance between the two populations is different. From the graph, it seems like we don't have a normal distribution with these datasets, so we should proceed with tests that do not necessarily require normality.
 ```{r 2-way t-test on big gathered dataset, echo=TRUE}
-#find which sites have most observations and filter them 
+#find which sites have most observations and filter for those; create plot to see graphical representation of count to determine distribution
 summary(Pb1981to2018.points$Site.Name)
 
 Pb.large.sets <- Pb1981to2018.points %>%
@@ -251,7 +318,7 @@ Pb.large.sets.plot <-
   ggplot(Pb.large.sets, 
          aes(x = Daily.Mean.Pb.Concentration, color = Site.Name)) +
   geom_freqpoly(stat = "count", alpha = 0.5) +
-  labs(x = "Lead concentration, ug/m3", y = "number of observations", title = "Sites in Detroit Largest Sample Size of Air Lead Data")
+  labs(x = "Lead concentration, ug/m3", y = "number of observations", title = "Sites in Detroit w/ Largest Sample Size of Air Lead Data")
 print(Pb.large.sets.plot)
 
 #statistical comparison of the 2 largest sample sets
@@ -271,39 +338,28 @@ summary(lm.Pb.large.sets)
 
 ```
 
-```{r 1-way ANOVA, echo=TRUE}
-Pb1981to2018.anova <- 
-  lm(Pb1981to2018.points$Daily.Mean.Pb.Concentration ~ 
-       Pb1981to2018.points$Site.ID)
-summary(Pb1981to2018.anova)
+Kruskal-Wallis tests performed on the whole large gathered dataset (Pb1981to2018.points), and on the dataset with the two largest sample sizes (Pb.large.sets). We see that there is a significant difference between the groups.
+```{r kruskal-wallis test - non parametric, then wilcoxon for post-hoc}
+#for the whole gathered dataset
+Pb1981to2018.kw <- kruskal.test(Pb1981to2018.points$Daily.Mean.Pb.Concentration ~
+                Pb1981to2018.points$Site.ID)
+Pb1981to2018.kw
+Pb1981to2018.wilcox <- 
+  wilcox.test(Pb1981to2018.points$Daily.Mean.Pb.Concentration, mu = 50, alternative = "less")
+Pb1981to2018.wilcox
 
-Pb1981to2018.anova2 <- 
-  aov(Pb1981to2018.points$Daily.Mean.Pb.Concentration ~ 
-       Pb1981to2018.points$Site.ID)
-summary(Pb1981to2018.anova2)
+#for the two large datasets
+Pb.large.sets.kw <- kruskal.test(Pb.large.sets$Daily.Mean.Pb.Concentration ~
+                Pb.large.sets$Site.ID)
+Pb.large.sets.kw
+Pb.large.sets.wilcox <- 
+  wilcox.test(Pb.large.sets$Daily.Mean.Pb.Concentration, mu = 50, alternative = "less")
+Pb.large.sets.wilcox
 
-Pb1981to2018.anova3 <- 
-  lme(Pb1981to2018.points$Daily.Mean.Pb.Concentration ~ 
-       Pb1981to2018.points$Site.ID)
-summary(Pb1981to2018.anova3)
 ```
 
-```{r 2-way ANOVA, using SiteID and month, echo=TRUE}
-#THIS IS PROB THE WRONG WAY TO DO THIS: I NEED TO HAVE 2 CATEGORIES, LIKE PETER LAKE AND PAUL LAKE: MAYBE FILTER TO A 1980S AND 2010S DATASET?? OR FILTER ONE YEAR'S  MONTH?
-
-Pb2wayanova.lm <- lm(Pb1981to2018.points$Daily.Mean.Pb.Concentration ~ 
-       Pb1981to2018.points$Site.ID + Pb1981to2018.points$month)
-summary(Pb2wayanova.lm)
-
-Pb2wayanova.aov <- aov(Pb1981to2018.points$Daily.Mean.Pb.Concentration ~ 
-       Pb1981to2018.points$Site.ID + Pb1981to2018.points$month)
-summary(Pb2wayanova.aov)
-  
-```
-
-
-#ANCOVA run after the Shapiro tests to determine the level of co-variance. The linear models explained about 31% of the covariance here.
-```{r ANCOVAs, echo=TRUE}
+ANCOVA and was run for the whole gathered dataset of Pb concentrations from the all the sites from 1981 to 2018 to determine the level of co-variance. The linear models explained about 31% of the covariance here.
+```{r ANCOVA, echo=TRUE}
 
 #is there co-variance btwn date and site?
 Pb1981to2018.ancova <- lm(data = Pb1981to2018.points, 
@@ -315,19 +371,11 @@ Pb1981to2018.interaction <- lm(data = Pb1981to2018.points,
                                Daily.Mean.Pb.Concentration ~ Date * Site.ID)
 summary(Pb1981to2018.interaction) #explains about 31% of the variance
 
-
-Pb.1984.ancova
-Pb.1990.ancova
-Pb2006.ancova
-Pb2017.ancova
+```
 
 
-TNancova.main <- lm(data = PeterPaul.chem.nutrients, tn_ug ~ lakename + depth) #main effect (we can tell by the + sign) using depth as continuous rather than categorical since we have one categ already
-summary(TNancova.main) #TN = 353 + 0(depth)for Paul + 136for Peter + E, only explaining 9% of variance
-
-# interaction effects
-TNancova.interaction <- lm(data = PeterPaul.chem.nutrients, tn_ug ~ lakename * depth)
-summary(TNancova.interaction)
+#
+```{r 5.1 first final graph, echo=FALSE}
 
 
 TNplot <- ggplot(PeterPaul.chem.nutrients, aes(x = depth, y = tn_ug, color = lakename)) + 
@@ -337,35 +385,17 @@ TNplot <- ggplot(PeterPaul.chem.nutrients, aes(x = depth, y = tn_ug, color = lak
 print(TNplot)
 ```
 
-
-```{r 4.2 - Spearmans rho, echo=TRUE}
-cor.test(Pb1981to2018.points$Daily.Mean.Pb.Concentration, 
-         Pb1981to2018.points$Site.ID, method = "spearman", exact = FALSE)
-
-```
-
-#A Wilcoxon test was performed on datasets that were not normally distributed
-```{r 4.3 - Wilcoxon(Mann-Whitney) test, echo=TRUE}
-
-Pb.wilcox <- 
-  wilcox.test(Pb1981to2018.points$Daily.Mean.Pb.Concentration,
-              mu = 50, alternative = "less")
-Pb.wilcox 
-
-```
-
 #add a basemap and GCS (WGS84)
-```{r 5.1 first final graph, echo=FALSE}
-
-```
-
 ```{r 5.2 second final graph, echo=FALSE}
 
 ```
 
 ```{r 5.3 third final graph, echo=FALSE}
 
+
+
 ```
+
 
 <Include text sections to accompany these R chunks to explain the reasoning behind your workflow, rationale for your approach, and the justification of meeting or failing to meet assumptions of tests.>
 
