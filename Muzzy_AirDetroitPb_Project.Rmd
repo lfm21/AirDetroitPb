@@ -100,7 +100,7 @@ The files were downloaded from https://www.epa.gov/outdoor-air-quality-data/down
 Shapefiles of neighborhoods in the area were downloaded from michigan.gov.
 
 
-The function rbind was used to combine all 37 datasets.
+Reading in all 37 datasets.
 ```{r read in all raw data files, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 Pb1981 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1981_raw.csv")
 Pb1982 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1982_raw.csv")
@@ -155,7 +155,10 @@ Pb1981to2018.gathered <- rbind(Pb1981, Pb1982, Pb1983, Pb1984, Pb1985,
 #write.csv(Pb1981to2018.gathered, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.gathered.csv")
 ```
 
-Tidy up dataset: select only useful columns, convert coordinates into geometry, format to Date.
+
+Format date to Date class for gathered data frame. 
+Convert coordinates into geometry (using crs = 4326 from http://gis-michigan.opendata.arcgis.com/datasets/D3::master-plan-neighborhoods-detroit). 
+Select only useful columns to tidy up dataset.
 ```{r class, echo=TRUE}
 library(dplyr) 
 #if raster pkg loaded after dplyr, R will default to raster's select function
@@ -166,6 +169,8 @@ class(Pb1981to2018.gathered$Daily.Mean.Pb.Concentration)
 Pb1981to2018.points <- st_as_sf(Pb1981to2018.gathered,
                                 coords = c("SITE_LATITUDE", "SITE_LONGITUDE"),
                                 crs = 4326)
+
+#write.csv(Pb1981to2018.points, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.points.csv")
 
 Pb1981to2018.tidy <- Pb1981to2018.points %>% 
   select(Date, Site.ID, Daily.Mean.Pb.Concentration,
@@ -197,13 +202,16 @@ AirPbDetroit.table
 <Include text sections to accompany these R chunks to explain the reasoning behind your workflow, and the rationale for your approach.>
 
 View the summaries of the datasets. The first dataset was from 1981, so I chose that one to examine the column names, dimensions, structure, and class type (sample date must be converted of class Date).
-```{r 1 - summary of example 1981 dataset}
+```{r 1 - summary of example 1981 dataframe, then of Pb1981to2018.tidy}
 str(Pb1981)
 colnames(Pb1981) 
 class(Pb1981$Date)
 head(Pb1981)
 summary(Pb1981)
 dim(Pb1981)
+
+dim(Pb1981to2018.tidy)
+colnames(Pb1981to2018.tidy)
 ```
 
 ```{r 2.1 - exploratory histogram to see Pb concentration, using 1981 dataset}
@@ -236,7 +244,7 @@ Pb1982.plot <- ggplot(Pb1982.month, aes(x = month,y = Daily.Mean.Pb.Concentratio
   #scale_y_log10() +
   theme(legend.position = "right") +
   labs(title = "Air Lead in Detroit, 1982")
-print(Pb1982.plot)
+#print(Pb1982.plot)
 
 #and a more recent year
 Pb2018$Date <- as.Date(Pb2018$Date, format = "%m/%d/%Y")
@@ -249,16 +257,50 @@ Pb2018.plot <- ggplot(Pb2018.month, aes(x = month,y = Daily.Mean.Pb.Concentratio
                                   color = Site.ID)) +
   geom_point(alpha = 0.75) +
   scale_fill_continuous(name = "Site code") +
-  scale_y_log10() +
+  #scale_y_log10() +
   theme(legend.position = "right") +
   labs(title = "Air Lead in Detroit, 2018")
-print(Pb2018.plot)
+#print(Pb2018.plot)
+
+library(gridExtra)
+grid.arrange(Pb1982.plot, Pb2018.plot, newpage = TRUE)
 
 ```
 
-###Most of the wrangling was done earlier in order to show a tidy usable dataset for the table. But there are examples of the wrangling in the datasets below.
+###Most of the wrangling was done earlier in document in order to show a tidy usable dataset for the kable table. But there are examples of the wrangling in the datasets below.
 I chose to test the wrangling on the 1982 dataset. Then I converted the coordinate columns to geometry points so they can be plotted on a map; and added a month and year column in order to see if there's seasonal change.
-```{r 3.1 - wrangling example datasets}
+
+```{r 3.1 create 1980s and 2010s dataframes}
+#1980s
+Pb1980s.gath <- rbind(Pb1981, Pb1982, Pb1983, Pb1984, Pb1985, 
+                 Pb1986, Pb1987, Pb1988, Pb1989, Pb1990)
+
+Pb1980s.gath$Date <- as.Date(Pb1980s.gath$Date, format = "%m/%d/%Y") 
+
+Pb1980s <- Pb1980s.gath %>% select(Date, Site.ID, Daily.Mean.Pb.Concentration,
+         UNITS, Site.Name, SITE_LATITUDE, SITE_LONGITUDE) %>% 
+  mutate(year = year(Date), month = month(Date)) %>% 
+  st_as_sf(coords = c("SITE_LATITUDE", "SITE_LONGITUDE"),crs = 4326)
+
+#write.csv(Pb1980s, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1980s.csv")
+  
+#2010s
+Pb2010s.gath <- rbind(Pb1981, Pb1982, Pb1983, Pb1984, Pb1985, 
+                 Pb1986, Pb1987, Pb1988, Pb1989, Pb1990)
+
+Pb2010s.gath$Date <- as.Date(Pb2010s.gath$Date, format = "%m/%d/%Y") 
+
+Pb2010s <- Pb2010s.gath %>% select(Date, Site.ID, Daily.Mean.Pb.Concentration,
+         UNITS, Site.Name, SITE_LATITUDE, SITE_LONGITUDE) %>% 
+  mutate(year = year(Date), month = month(Date)) %>% 
+  st_as_sf(coords = c("SITE_LATITUDE", "SITE_LONGITUDE"),crs = 4326)
+
+#write.csv(Pb2010s, row.names = FALSE, "./EPA_Pb_data_Processed/Pb2010s.csv")
+```
+
+
+```{r 1982 and 2018 - I PROB DONT NEED wrangling example datasets}
+#wrangle 1982 data frame
 as.Date(Pb1982$Date, format = "%m/%d/%Y") #takes up too much space
 
 Pb1982.month.yr <-select(Pb1982, Date, Site.ID, Site.Name,
@@ -266,48 +308,24 @@ Pb1982.month.yr <-select(Pb1982, Date, Site.ID, Site.Name,
                          SITE_LATITUDE, SITE_LONGITUDE) %>% 
   mutate(year = year(Date), month = month(Date)) 
 
-Pb1981.month.yr <- select(Pb1981, Date, Site.ID, Site.Name,
-                          Daily.Mean.Pb.Concentration, UNITS,
-                          SITE_LATITUDE, SITE_LONGITUDE)  %>% 
-  mutate(year = year(Date), month = month(Date)) 
-
+#wrangle 2018 data frame
 as.Date(Pb2018$Date, format = "%m/%d/%Y") #takes up too much space
 Pb2018month.yr <- select(Pb2018, Date, Site.ID, Site.Name,
                                     Daily.Mean.Pb.Concentration, UNITS,
                                     SITE_LATITUDE, SITE_LONGITUDE) %>% 
   mutate(year = year(Date), month = month(Date)) 
- 
-```
-
-```{r 3.2 - wrangling all 37 datasets }
-#thirty-seven datasets were read (this code was very large, so it's not included), then collected into one gathered dataset, and ensured that sample date was Date class.
-
-Pb1981to2018.gathered <- rbind(Pb1981, Pb1982, Pb1983, Pb1984, Pb1985,
-                      Pb1986, Pb1987, Pb1988, Pb1989, Pb1990,
-                      Pb1991, Pb1992, Pb1993, Pb1994, Pb1995,
-                      Pb1996, Pb1997, Pb1998, Pb1999, Pb2000,
-                      Pb2005, Pb2006, Pb2007, Pb2008, Pb2009,
-                      Pb2010, Pb2011, Pb2012, Pb2013, Pb2014,
-                      Pb2015, Pb2016, Pb2017, Pb2018) %>% 
-  select(Date, Site.ID, Site.Name, Daily.Mean.Pb.Concentration, UNITS,
-                                 SITE_LATITUDE, SITE_LONGITUDE) 
-
-as.Date(Pb1981to2018.gathered$Date, format = "%m/%d/%Y")
-class(Pb1981to2018.gathered$Date) #Date
-summary(Pb1981to2018.points$Site.Name) #11 named sites, a few unnamed
-
-write.csv(Pb1981to2018.gathered, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.gathered.csv")
-
-```
-
-```{r 3.3 - converting coord columns to geometry, adding year and month columns }
-Pb1981to2018.points <- st_as_sf(Pb1981to2018.gathered, coords = c("SITE_LATITUDE", "SITE_LONGITUDE"), crs = 26801) %>% 
-  mutate(month = month(Date), year = year(Date)) 
-colnames(Pb1981to2018.points)
-write.csv(Pb1981to2018.points, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.points.csv")
 ```
 
 There are a few variables that have a Site.Id but no Site.Name. I'd like to fill the row with something.
+```{r 3.2 ATTEMPT to fix Site Names}
+Pb1981to2018.names <- Pb1981to2018.tidy
+```
+
+```{r wrangle the shp to make it usable}
+Detroit.neighborhoods <- 
+  st_read("./Master_Plan_Neighborhoods_Detroit/Master_Plan_Neighborhoods_Detroit.shp")
+```
+
 
 ```{r NOT WORKING YET: fill in blank variables with something}
 #don't know how to do this
@@ -322,7 +340,7 @@ There are a few variables that have a Site.Id but no Site.Name. I'd like to fill
 <Include R chunks for 3+ statistical tests (display code and output) and 3+ final visualization graphs (display graphs only).>
 ###Is there a normal distribution of Daily Mean Lead Concentration values in different decades? At different sites? In different months?
 
-A  Shapiro-Wilk test was done on a few separate datasets. The Shapiro test can only run between 3 and 5000, so the Pb1981to2018.gathered dataset is slightly too large. Instead I'll run Shapiro on one dataset from each decade that has a realtively high number of observations. T-tests were then done to determine if the mean was indeed lower than 1.0ug/m3.
+A  Shapiro-Wilk test was done on a few separate datasets. The Shapiro test can only run between 3 and 5000, so the Pb1981to2018.gathered data frame is slightly too large. Instead I'll run Shapiro on one dataset from each decade that has a relatively high number of observations. T-tests were then done to determine if the mean was indeed lower than 1.0ug/m3.
 For all of these years, the p-values were very low, so we can reject the null hypothesis, as the alternative is true: the mean air lead concentration in these years was less than 1.0ug/m3.
 From 1984 to 1990, the mean Pb concentration was an order of magnitude lower;
 ```{r 4.1 -  Shapiro-Wilk test: normal distribution, echo=TRUE}
@@ -384,14 +402,16 @@ summary(lm.Pb.large.sets)
 
 ```
 
-Kruskal-Wallis tests performed on the whole large gathered dataset (Pb1981to2018.points), and on the dataset with the two largest sample sizes (Pb.large.sets). We see that there is a significant difference between the groups.
+Kruskal-Wallis tests was performed on the whole large gathered data frame (Pb1981to2018.points); the p-val was low, showing some significance of the hypothesis that Pb concentration is realted to site.
+Then Kruskal was done on the data frame with the two largest sample sizes (Pb.large.sets). We see that there is a significant difference between the two groups in the largest datasets.
 ```{r kruskal-wallis test - non parametric, then wilcoxon for post-hoc}
 #for the whole gathered dataset
 Pb1981to2018.kw <- kruskal.test(Pb1981to2018.points$Daily.Mean.Pb.Concentration ~
                 Pb1981to2018.points$Site.ID)
 Pb1981to2018.kw
 Pb1981to2018.wilcox <- 
-  wilcox.test(Pb1981to2018.points$Daily.Mean.Pb.Concentration, mu = 50, alternative = "less")
+  wilcox.test(Pb1981to2018.points$Daily.Mean.Pb.Concentration,
+              mu = 50, alternative = "less")
 Pb1981to2018.wilcox
 
 #for the two large datasets
@@ -399,7 +419,8 @@ Pb.large.sets.kw <- kruskal.test(Pb.large.sets$Daily.Mean.Pb.Concentration ~
                 Pb.large.sets$Site.ID)
 Pb.large.sets.kw
 Pb.large.sets.wilcox <- 
-  wilcox.test(Pb.large.sets$Daily.Mean.Pb.Concentration, mu = 50, alternative = "less")
+  wilcox.test(Pb.large.sets$Daily.Mean.Pb.Concentration,
+              mu = 50, alternative = "less")
 Pb.large.sets.wilcox
 
 ```
@@ -419,8 +440,7 @@ summary(Pb1981to2018.interaction) #explains about 31% of the variance
 
 ```
 
-
-#
+graph of plot lines
 ```{r 5.1 first final graph, echo=FALSE}
 Schools.plot.line <- ggplot()
 
