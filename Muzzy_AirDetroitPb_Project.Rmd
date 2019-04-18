@@ -156,8 +156,7 @@ Pb1981to2018.gathered <- rbind(Pb1981, Pb1982, Pb1983, Pb1984, Pb1985,
 ```
 
 
-Format date to Date class for gathered data frame. 
-Convert coordinates into geometry (using crs = 4326 from http://gis-michigan.opendata.arcgis.com/datasets/D3::master-plan-neighborhoods-detroit). 
+Format date to Date class for gathered data frame. Convert coordinates into geometry (using crs = 4326 from http://gis-michigan.opendata.arcgis.com/datasets/D3::master-plan-neighborhoods-detroit). 
 Select only useful columns to tidy up dataset.
 ```{r class, echo=TRUE}
 library(dplyr) 
@@ -180,7 +179,6 @@ Pb1981to2018.tidy <- Pb1981to2018.points %>%
 #write.csv(Pb1981to2018.tidy, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.tidy.csv")
   
 ```
-
 
 <Add a table that summarizes your data structure. This table can be made in markdown text or inserted as a `kable` function in an R chunk. If the latter, do not include the code used to generate your table.>
 
@@ -267,6 +265,17 @@ grid.arrange(Pb1982.plot, Pb2018.plot, newpage = TRUE)
 
 ```
 
+```{r look at the .shp }
+Detroit.neighborhoods <- 
+  st_read("./EPA_Pb_data_Raw/Detroit_nbhoods/Master_Plan_Neighborhoods_Detroit.shp")
+st_crs(Pb1981to2018.points)
+st_crs(Detroit.neighborhoods)
+plot(Detroit.neighborhoods["NHOOD"])
+mapview(Detroit.neighborhoods["NHOOD"])
+mapview(Pb1981to2018.points["Site.ID"])
+```
+
+
 ###Most of the wrangling was done earlier in document in order to show a tidy usable dataset for the kable table. But there are examples of the wrangling in the datasets below.
 I chose to test the wrangling on the 1982 dataset. Then I converted the coordinate columns to geometry points so they can be plotted on a map; and added a month and year column in order to see if there's seasonal change.
 
@@ -299,7 +308,7 @@ Pb2010s <- Pb2010s.gath %>% select(Date, Site.ID, Daily.Mean.Pb.Concentration,
 ```
 
 
-```{r 1982 and 2018 - I PROB DONT NEED wrangling example datasets}
+```{r 1982 and 2018 - I PROB DONT NEED THIS wrangling example datasets}
 #wrangle 1982 data frame
 as.Date(Pb1982$Date, format = "%m/%d/%Y") #takes up too much space
 
@@ -321,9 +330,31 @@ There are a few variables that have a Site.Id but no Site.Name. I'd like to fill
 Pb1981to2018.names <- Pb1981to2018.tidy
 ```
 
-```{r wrangle the shp to make it usable}
-Detroit.neighborhoods <- 
-  st_read("./Master_Plan_Neighborhoods_Detroit/Master_Plan_Neighborhoods_Detroit.shp")
+```{r wrangle the .shp to make it usable}
+
+ #do I need to subset out SiteID or month or something to show points clearly?
+Detroit.1980smap <- ggplot() +
+  geom_sf(data = Detroit.neighborhoods, col = "red") +
+  geom_sf(data = Pb1980s, col = "blue") 
+plot(Pb1980s$geometry)
+plot(Detroit.1980smap)
+
+mapView(Pb1980s$geometry)
+
+Detroit.1980sjoin <- Detroit.neighborhoods %>% 
+  left_join(y = Pb1980s, by = c())
+
+#correct order to see mult datasets
+ggplot() +
+  geom_sf(data = state_sf_utm, color='red',size=2) +
+  geom_sf(data = counties_sf_utm, aes(fill = ALAND), color = 'white')  +
+  geom_sf(data = EPAair_PM_avg_sf_UTM, color='blue', size=2) + 
+  scale_fill_gradient(low="yellow", high="darkgreen")
+
+#why a left join
+NWISjoin <- NWISgage_ht %>%
+left_join(y = NEgagepoints, by = c('site_no', 'station_nm')) %>%
+na.omit()
 ```
 
 
@@ -331,6 +362,8 @@ Detroit.neighborhoods <-
 #don't know how to do this
 #Pb1981to2018.complete <- (Pb1981to2018.points$Site.Name, Site.Name == "", "unnamed site") 
 #subset(Site.ID == 261630020, na.rm = TRUE)
+
+#EPA.NCAir.PM25.2018.sitespecific$AQS_PARAMETER_DESC <- "PM2.5"
 ```
 
 \newpage
