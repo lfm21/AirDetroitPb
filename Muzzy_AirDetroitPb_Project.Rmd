@@ -38,30 +38,40 @@ abstract: Tetraethyl lead (TEL) was completely phased out of gasoline in 1995; a
 
 <Note: set up autoreferencing for figures and tables in your document>
 
-```{r setup, include=FALSE}
+```{r setup, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 # Set your working directory
 setwd("~/Desktop/Envtl_Data_Analytics/AirDetroitPb")
 
 # Load your packages
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+devtools::install_github("Nowosad/spDataLarge")
 library(dplyr)
 library(tidyverse)
 library(tidyr)
+library(tidyselect)
+library(lubridate)
 library(ggplot2)
 library(viridis)
 library(viridisLite)
 library(gridExtra)
 library(colorRamps)
-library(mapview)
-library(lubridate)
 library(lsmeans)
 library(nlme)
 library(multcompView)
 library(trend)
 library(corrplot)
+library(xtable)
+#install.packages("sf")
+#install.packages("raster")
+#install.packages("spData")
 library(leaflet)
+library(mapview)
 library(sf)
-library(readr)
+library(spData)
+library(raster)
 library(knitr)
+getwd()
 
 # Set your ggplot theme
 Pbtheme <- theme_minimal(base_size = 11) +
@@ -90,22 +100,6 @@ The files were downloaded from https://www.epa.gov/outdoor-air-quality-data/down
 Shapefiles of neighborhoods in the area were downloaded from michigan.gov.
 
 
-```{r load packages, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-library(readr)
-library(dplyr)
-library(tidyverse)
-library(tidyr)
-library(lubridate)
-#install.packages("sf")
-#install.packages("raster")
-#install.packages("spData")
-devtools::install_github("Nowosad/spDataLarge")
-library(sf)
-library(spData)
-library(raster)
-getwd()
-``` 
 The function rbind was used to combine all 37 datasets.
 ```{r read files, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 Pb1981 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1981_raw.csv")
@@ -146,6 +140,20 @@ Pb2015 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2015_raw.csv")
 Pb2016 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2016_raw.csv")
 Pb2017 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2017_raw.csv")
 Pb2018 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2018_raw.csv")
+
+
+Pb1981to2018.gathered <- rbind(Pb1981, Pb1982, Pb1983, Pb1984, Pb1985,
+                      Pb1986, Pb1987, Pb1988, Pb1989, Pb1990,
+                      Pb1991, Pb1992, Pb1993, Pb1994, Pb1995,
+                      Pb1996, Pb1997, Pb1998, Pb1999, Pb2000,
+                      Pb2005, Pb2006, Pb2007, Pb2008, Pb2009,
+                      Pb2010, Pb2011, Pb2012, Pb2013, Pb2014,
+                      Pb2015, Pb2016, Pb2017, Pb2018) %>% 
+  select(Pb1981to2018.gathered, Date, Site.ID, Site.Name,
+       Daily.Mean.Pb.Concentration, UNITS, 
+       SITE_LATITUDE, SITE_LONGITUDE)
+
+write.csv(Pb1981to2018.gathered, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.gathered.csv")
 ```
 
 <Add a table that summarizes your data structure. This table can be made in markdown text or inserted as a `kable` function in an R chunk. If the latter, do not include the code used to generate your table.>
@@ -153,12 +161,12 @@ Pb2018 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2018_raw.csv")
 ##Table of processed dataset of every sample from Detroit-Dearborn-Warren area from each year (1981-2018).
 ```{r kable table, echo=FALSE}
 
-Pb1981to2018.points <- list.files("./EPA_Pb_data_Processed/EPb1981to2018.points.csv", full.names = TRUE)
+Pb1981to2018.points <- list.files("./EPA_Pb_data_Processed/Pb1981to2018.points.csv", full.names = TRUE)
 
-#Pb1981to2018.points <- read.csv("./EPA_Pb_data_Processed/EPb1981to2018.points.csv")
+Pb1981to2018.points <- read.csv("./EPA_Pb_data_Processed/Pb1981to2018_points.csv")
 
 PbDetroit <- head(Pb1981to2018.points)
-
+head(Pb1981to2018.points)
 AirPbDetroit.table <- kable(PbDetroit, "markdown",align = "l", 
                             caption = "EPA Air Lead in Detroit, 1981-2018", 
                             escape = TRUE) 
@@ -194,16 +202,15 @@ ggplot(Pb1981) +
 ```{r 2.2 - histogram to see Pb concentration in a more recent year}
 
 ggplot(Pb2009) +
-  geom_histogram(aes(x = Daily.Mean.Pb.Concentration), bins = 45) +
+  geom_histogram(aes(x = Daily.Mean.Pb.Concentration), bins = 100) +
   labs(title = "Air Lead in Detroit, 2009")
 ```
 
 ```{r 2.3 - point graph to show differences between sites and months, using dataset with the most samples}
 
 ggplot(Pb2018, aes(x = Date, y = Daily.Mean.Pb.Concentration,
-       color = Site.ID)) +
+       color = Site.ID)) + 
   geom_point(alpha = 0.75) +
-  scale_color_viridis("magma") +
   scale_fill_manual(name = "Site code", labels = c("school", "park")) +
   scale_y_log10() +
   theme(legend.position = "right") +
@@ -211,21 +218,21 @@ ggplot(Pb2018, aes(x = Date, y = Daily.Mean.Pb.Concentration,
 
 ```
 
-I chose to test the wrangling on the 1981 dataset. Then I converted the coordinate columns to geometry points so they can be plotted on a map; and added a month and year column in order to see if there's seasonal change.
+I chose to test the wrangling on the 1982 dataset. Then I converted the coordinate columns to geometry points so they can be plotted on a map; and added a month and year column in order to see if there's seasonal change.
 ```{r 3.1 - wrangling example datasets}
-#as.Date(Pb1981$Date, format = "%m/%d/%Y") #takes up too much space
+as.Date(Pb1982$Date, format = "%m/%d/%Y") #takes up too much space
 
-Pb1981.month.yr <- Pb1981 %>% dplyr::select( Date, Site.ID, Site.Name,
-                                             Daily.Mean.Pb.Concentration, UNITS,
-                                             SITE_LATITUDE, SITE_LONGITUDE) %>% 
+Pb1982.month.yr <-select(Pb1982, Date, Site.ID, Site.Name,
+                         Daily.Mean.Pb.Concentration, UNITS,
+                         SITE_LATITUDE, SITE_LONGITUDE) %>% 
   mutate(year = year(Date), month = month(Date)) 
 
-#Pb1981.month.yr <- select(Pb1981, Date, Site.ID, Site.Name,
-                          #Daily.Mean.Pb.Concentration, UNITS,
-                          #SITE_LATITUDE, SITE_LONGITUDE)  %>% 
-  #mutate(year = year(Date), month = month(Date)) 
+Pb1981.month.yr <- select(Pb1981, Date, Site.ID, Site.Name,
+                          Daily.Mean.Pb.Concentration, UNITS,
+                          SITE_LATITUDE, SITE_LONGITUDE)  %>% 
+  mutate(year = year(Date), month = month(Date)) 
 
-#as.Date(Pb2018$Date, format = "%m/%d/%Y") #takes up too much space
+as.Date(Pb2018$Date, format = "%m/%d/%Y") #takes up too much space
 Pb2018month.yr <- select(Pb2018, Date, Site.ID, Site.Name,
                                     Daily.Mean.Pb.Concentration, UNITS,
                                     SITE_LATITUDE, SITE_LONGITUDE) %>% 
@@ -246,11 +253,11 @@ Pb1981to2018.gathered <- rbind(Pb1981, Pb1982, Pb1983, Pb1984, Pb1985,
   select(Date, Site.ID, Site.Name, Daily.Mean.Pb.Concentration, UNITS,
                                  SITE_LATITUDE, SITE_LONGITUDE) 
 
-#as.Date(Pb1981to2018.gathered$Date, format = "%m/%d/%Y")
+as.Date(Pb1981to2018.gathered$Date, format = "%m/%d/%Y")
 class(Pb1981to2018.gathered$Date) #Date
 summary(Pb1981to2018.points$Site.Name) #11 named sites, a few unnamed
 
-#write.csv(Pb1981to2018.gathered, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.gathered.csv")
+write.csv(Pb1981to2018.gathered, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.gathered.csv")
 
 ```
 
@@ -376,7 +383,7 @@ summary(Pb1981to2018.interaction) #explains about 31% of the variance
 
 #
 ```{r 5.1 first final graph, echo=FALSE}
-
+Schools.plot.line <- ggplot()
 
 TNplot <- ggplot(PeterPaul.chem.nutrients, aes(x = depth, y = tn_ug, color = lakename)) + 
   geom_point() + 
@@ -385,8 +392,27 @@ TNplot <- ggplot(PeterPaul.chem.nutrients, aes(x = depth, y = tn_ug, color = lak
 print(TNplot)
 ```
 
-#add a basemap and GCS (WGS84)
-```{r 5.2 second final graph, echo=FALSE}
+
+```{r 5.2 child risk graph , echo=FALSE}
+Pb.childrisk <-  Pb1981to2018.points %>%
+  filter(Site.Name %in% c("PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS", 
+                          "Allen Park", "Eliza Downwind", "Southwestern H.S.", 
+                          "NMH48217 NEW MT HERMAN CHURCH", "River Rouge")) %>%
+  mutate(month = month(Date), year = year(Date)) 
+
+Pb.childrisk.plot <- ggplot(Pb.childrisk, 
+                            aes(x = year, y = Daily.Mean.Pb.Concentration,
+                               fill = year)) +
+  geom_point(aes(), size = 1, alpha = 0.5) +
+  facet_wrap(vars(Site.Name), 
+             scales = "free_y", ncol = 1, strip.position = "right") +
+  scale_color_viridis(option = "cividis") +
+  labs(title = "Air Lead Risk to Children, Detroit parks, 1981-2018",
+       x = "Year", y = "Lead Concentration ug/m3") +
+  scale_y_log10() +
+  theme(axis.line.x = element_line(color = "black"),
+        legend.position = "bottom") 
+print(Pb.childrisk.plot)
 
 ```
 

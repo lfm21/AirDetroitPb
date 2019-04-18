@@ -78,11 +78,20 @@ Pb2017 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2017_raw.csv")
 Pb2018 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2018_raw.csv")
 ```
 
-```{r attempt at function for reading csv}
-get <- Pb1981
-readin <- read.csv("EPA_Pb_Detroit1981_raw.csv")
+```{r errors with reading in processed csv}
 
-Pb1981 <- read.csv("EPA_Pb_Detroit1981_raw.csv")
+#Pb1981to2018.points <- list.files("./EPA_Pb_data_Processed/Pb1981to2018.points.csv", full.names = TRUE) #this doesn't produce anything, I guess??
+#Pb1981to2018 <- read.csv("./EPA_Pb_data_Processed/Pb1981to2018.points.csv")
+
+Pb1981to2018 <- read_csv("EPA_Pb_data_Processed/Pb1981to2018.points.csv")
+#this is the only one that reads in, but it gives 5418 parsing failures
+
+#Pb1981to2018.1 <- read.csv("EPA_Pb_data_Processed/Pb1981to2018.points.csv")
+#Error in read.table(file = file, header = header, sep = sep, quote = quote,  : duplicate 'row.names' are not allowed
+
+#Pb1981to2018.points <- read.csv("./EPA_Pb_data_Processed/Pb1981to2018_points.csv")
+#Error in file(file, "rt") : cannot open the connection
+
 ```
 
 
@@ -112,7 +121,6 @@ class(Pb1981$Date)
 ```
 
 ```{r manual function to format Date}
-
 Pb1981$Date <- as.Date(Pb1981$Date, format = "%m/%d/%Y")
 Pb1982$Date <- as.Date(Pb1982$Date, format = "%m/%d/%Y")
 Pb1983$Date <- as.Date(Pb1983$Date, format = "%m/%d/%Y")
@@ -157,9 +165,11 @@ Pb2018$Date <- as.Date(Pb2018$Date, format = "%m/%d/%Y")
 Pb1981.gathered <- Pb1981 %>%
   select(Date, Site.ID, Site.Name, Daily.Mean.Pb.Concentration, UNITS,
          SITE_LATITUDE, SITE_LONGITUDE)
+
 ```
 
 ###Explore the data graphically
+
 ```{r graphical representation}
 library(colormap)
 
@@ -182,6 +192,7 @@ ggplot(Pb2018, aes(x = Date, y = Daily.Mean.Pb.Concentration)) +
 ```
 
 ## use rbind to put all 9 datasets together, then select columns
+
 
 ```{r compile into 1 dataset}
 library(dplyr)
@@ -284,6 +295,7 @@ Pb.childrisk <-  Pb1981to2018.points %>%
                           "NMH48217 NEW MT HERMAN CHURCH", "River Rouge")) %>%
   mutate(month = month(Date), year = year(Date)) 
 
+
 Pb.childrisk.plot <- ggplot(Pb.childrisk, 
                             aes(x = year, y = Daily.Mean.Pb.Concentration,
                                fill = year)) +
@@ -368,7 +380,7 @@ library("viridis")
 
 ```
 
-```{r}
+```{r compare schools 2}
 Pb.compare.schools2 <- ggplot(Pb.schools.parks, 
                               aes(x = year, y = Daily.Mean.Pb.Concentration,
                  color = Site.Name)) +
@@ -381,7 +393,7 @@ Pb.compare.schools2 <- ggplot(Pb.schools.parks,
 print(Pb.compare.schools2)
 ```
 
-```{r}
+```{r SWHS plot}
 # Southwestern High School, the site sampled most often since 1981
 
 Pb.SWHS <- ggplot(subset(Pb.schools.parks, 
@@ -398,7 +410,7 @@ print(Pb.SWHS)
 ```
 
 
-```{r info about gathered dataset}
+```{r info about gathered dataset & attempt to name unnamed site}
 dim(Pb1981to2018.gathered) #[1] 5418 rows of 7 columns, 37 years of data, sample taken 10 days or so
 summary(Pb1981to2018.gathered$Site.Name) #12 sites
 summary(Pb1981to2018.gathered$Daily.Mean.Pb.Concentration)
@@ -505,10 +517,6 @@ Pb.plot2 <- ggplot(Pb1981to2018.points,
   theme(axis.text = element_text(color = "dark gray"), legend.position = "bottom")
 
 print(Pb.plot2)
-```
-
-```{r}
-
 ```
 
 
