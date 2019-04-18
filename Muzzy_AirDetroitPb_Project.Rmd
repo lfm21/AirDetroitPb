@@ -85,11 +85,11 @@ theme_set(Pbtheme)
 # Research Question and Rationale
 <Paragraph detailing the rationale for your analysis. What is the significant application and/or interest in this topic? Connect to environmental topic(s)/challenge(s).>
 
-Children under 6 are extremely vulnerable to lead poisoning, the effects of which show up later in life. Lead exposure and poisoning therefore has large public health, social, and economic ramifications. Tetraethyl lead (TEL) was an additive in gasoline for decades, but growing public health pressures in the United States caused it to be completely phased out of gasoline by 1995. With this reduction of lead in nearly all gasoline, air lead levels have decreased 98% from 1980 to 2014.  In 2016, the U.S. EPA announced revised national ambient air quality standards (NAAQS) for lead of 0.15 ug/m3, in terms of a 3-month average concentration. Despite this ridiculously low concentration standard, and the dramatic decrease in the past four decades, lead still persists in the environment. Lead in paint has been banned in the U.S., but certain airplanes are still permitted to use leaded fuel. My research is interested in what lead concentrations are still extant in the air, especially in a larger American cities, where automobiles are the most common mode of transportation.
+Children under 6 are extremely vulnerable to lead poisoning, the effects of which show up later in life, and cannot be remediated. Lead exposure and poisoning therefore has large public health, social, and economic ramifications. Tetraethyl lead (TEL) was an additive in gasoline for decades, but growing public health pressures in the United States caused it to be completely phased out of gasoline by 1995. With this reduction of lead in nearly all gasoline, air lead levels have decreased 98% from 1980 to 2014.  In 2016, the U.S. EPA announced revised national ambient air quality standards (NAAQS) for lead of 0.15 ug/m3, in terms of a 3-month average concentration. Despite this ridiculously low concentration standard, and the dramatic decrease in the past four decades, lead still persists in the environment. Lead in paint has been banned in the U.S., but certain airplanes are still permitted to use leaded fuel. My research is interested in what lead concentrations are still extant in the air, especially in a larger American cities, where automobiles are the most common mode of transportation.
 
 <Paragraph detailing your research question(s) and goals. What do you want to find out? Include a sentence (or a few) on the dataset you are using to answer this question - just enough to give your reader an idea of where you are going with the analysis.>
 
-How has the "Motor City" Detroit, MI, area experienced a decrease in air lead levels over time? Where in the city has lead in air been sampled? Are the sample sites in the city at sites where vulnerable populations could be exposed?
+How has the "Motor City" Detroit, MI, area experienced a decrease in air lead levels over time?**** Where in the city has lead in air been sampled?**** Are the sample sites in the city at sites where vulnerable populations could be exposed?
 
 \newpage
 
@@ -101,7 +101,7 @@ Shapefiles of neighborhoods in the area were downloaded from michigan.gov.
 
 
 The function rbind was used to combine all 37 datasets.
-```{r read files, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+```{r read in all raw data files, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 Pb1981 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1981_raw.csv")
 Pb1982 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1982_raw.csv")
 Pb1983 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1983_raw.csv")
@@ -141,32 +141,48 @@ Pb2016 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2016_raw.csv")
 Pb2017 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2017_raw.csv")
 Pb2018 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2018_raw.csv")
 
+```
 
+Combine all datasets using rbind.
+```{r one large dataset of all years, echo=FALSE}
 Pb1981to2018.gathered <- rbind(Pb1981, Pb1982, Pb1983, Pb1984, Pb1985,
                       Pb1986, Pb1987, Pb1988, Pb1989, Pb1990,
                       Pb1991, Pb1992, Pb1993, Pb1994, Pb1995,
                       Pb1996, Pb1997, Pb1998, Pb1999, Pb2000,
                       Pb2005, Pb2006, Pb2007, Pb2008, Pb2009,
                       Pb2010, Pb2011, Pb2012, Pb2013, Pb2014,
-                      Pb2015, Pb2016, Pb2017, Pb2018) %>% 
-  select(Pb1981to2018.gathered, Date, Site.ID, Site.Name,
-       Daily.Mean.Pb.Concentration, UNITS, 
-       SITE_LATITUDE, SITE_LONGITUDE)
-
-write.csv(Pb1981to2018.gathered, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.gathered.csv")
+                      Pb2015, Pb2016, Pb2017, Pb2018) 
+#write.csv(Pb1981to2018.gathered, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.gathered.csv")
 ```
+
+Tidy up dataset: select only useful columns, convert coordinates into geometry, format to Date.
+```{r class, echo=TRUE}
+library(dplyr) 
+#if raster pkg loaded after dplyr, R will default to raster's select function
+
+Pb1981to2018.gathered$Date <- as.Date(Pb1981to2018.gathered$Date, format = "%m/%d/%Y")
+class(Pb1981to2018.gathered$Daily.Mean.Pb.Concentration)
+
+Pb1981to2018.points <- st_as_sf(Pb1981to2018.gathered,
+                                coords = c("SITE_LATITUDE", "SITE_LONGITUDE"),
+                                crs = 4326)
+
+Pb1981to2018.tidy <- Pb1981to2018.points %>% 
+  select(Date, Site.ID, Daily.Mean.Pb.Concentration,
+         UNITS, Site.Name, geometry) %>% 
+  mutate(year = year(Date), month = month(Date))
+
+#write.csv(Pb1981to2018.tidy, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.tidy.csv")
+  
+```
+
 
 <Add a table that summarizes your data structure. This table can be made in markdown text or inserted as a `kable` function in an R chunk. If the latter, do not include the code used to generate your table.>
 
 ##Table of processed dataset of every sample from Detroit-Dearborn-Warren area from each year (1981-2018).
 ```{r kable table, echo=FALSE}
 
-Pb1981to2018.points <- list.files("./EPA_Pb_data_Processed/Pb1981to2018.points.csv", full.names = TRUE)
-
-Pb1981to2018.points <- read.csv("./EPA_Pb_data_Processed/Pb1981to2018_points.csv")
-
-PbDetroit <- head(Pb1981to2018.points)
-head(Pb1981to2018.points)
+PbDetroit <- head(Pb1981to2018.tidy)
 AirPbDetroit.table <- kable(PbDetroit, "markdown",align = "l", 
                             caption = "EPA Air Lead in Detroit, 1981-2018", 
                             escape = TRUE) 
@@ -180,9 +196,8 @@ AirPbDetroit.table
 
 <Include text sections to accompany these R chunks to explain the reasoning behind your workflow, and the rationale for your approach.>
 
-It is necessary to look at summaries of the datasets. The first dataset was from 1981, so I chose that one to examine the column names, dimensions, structure, and class type (sample date must be converted of class Date).
+View the summaries of the datasets. The first dataset was from 1981, so I chose that one to examine the column names, dimensions, structure, and class type (sample date must be converted of class Date).
 ```{r 1 - summary of example 1981 dataset}
-
 str(Pb1981)
 colnames(Pb1981) 
 class(Pb1981$Date)
@@ -196,7 +211,6 @@ dim(Pb1981)
 ggplot(Pb1981) +
   geom_histogram(aes(x = Daily.Mean.Pb.Concentration), bins = 45) +
   labs(title = "Air Lead in Detroit, 1981")
-
 ```
 
 ```{r 2.2 - histogram to see Pb concentration in a more recent year}
@@ -206,18 +220,43 @@ ggplot(Pb2009) +
   labs(title = "Air Lead in Detroit, 2009")
 ```
 
-```{r 2.3 - point graph to show differences between sites and months, using dataset with the most samples}
+(This plot uses Site.ID instead of Site.Name because not every site is named.)
+```{r 2.3 - point graph to show differences between sites and months}
+#early 1980s plot
+Pb1982$Date <- as.Date(Pb1982$Date, format = "%m/%d/%Y")
 
-ggplot(Pb2018, aes(x = Date, y = Daily.Mean.Pb.Concentration,
-       color = Site.ID)) + 
+Pb1982.month <- select(Pb1982, Date, Site.ID, Daily.Mean.Pb.Concentration, UNITS,
+         Site.Name, SITE_LATITUDE, SITE_LONGITUDE) %>% 
+  mutate(year = year(Date), month = month(Date))
+
+Pb1982.plot <- ggplot(Pb1982.month, aes(x = month,y = Daily.Mean.Pb.Concentration,
+                                  color = Site.ID)) +
   geom_point(alpha = 0.75) +
-  scale_fill_manual(name = "Site code", labels = c("school", "park")) +
+  scale_fill_continuous(name = "Site code") +
+  #scale_y_log10() +
+  theme(legend.position = "right") +
+  labs(title = "Air Lead in Detroit, 1982")
+print(Pb1982.plot)
+
+#and a more recent year
+Pb2018$Date <- as.Date(Pb2018$Date, format = "%m/%d/%Y")
+
+Pb2018.month <- select(Pb2018, Date, Site.ID, Daily.Mean.Pb.Concentration, UNITS,
+         Site.Name, SITE_LATITUDE, SITE_LONGITUDE) %>% 
+  mutate(year = year(Date), month = month(Date))
+
+Pb2018.plot <- ggplot(Pb2018.month, aes(x = month,y = Daily.Mean.Pb.Concentration,
+                                  color = Site.ID)) +
+  geom_point(alpha = 0.75) +
+  scale_fill_continuous(name = "Site code") +
   scale_y_log10() +
   theme(legend.position = "right") +
   labs(title = "Air Lead in Detroit, 2018")
+print(Pb2018.plot)
 
 ```
 
+###Most of the wrangling was done earlier in order to show a tidy usable dataset for the table. But there are examples of the wrangling in the datasets below.
 I chose to test the wrangling on the 1982 dataset. Then I converted the coordinate columns to geometry points so they can be plotted on a map; and added a month and year column in order to see if there's seasonal change.
 ```{r 3.1 - wrangling example datasets}
 as.Date(Pb1982$Date, format = "%m/%d/%Y") #takes up too much space
