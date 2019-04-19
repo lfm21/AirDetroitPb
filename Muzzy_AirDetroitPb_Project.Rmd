@@ -326,8 +326,8 @@ Pb2018month.yr <- select(Pb2018, Date, Site.ID, Site.Name,
 ```
 
 There are a few variables that have a Site.Id but no Site.Name. I'd like to fill the row with something.
-```{r 3.2 ATTEMPT to fix Site Names}
-Pb1981to2018.names <- Pb1981to2018.tidy
+```{r 3.2 fill in the blank/missing Site Names with something}
+Pb1981to2018.tidy$Site.Name[Pb1981to2018.tidy$Site.Name == ""] <- "unlabeled site" 
 ```
 
 ```{r wrangle the .shp to make it usable}
@@ -355,15 +355,6 @@ ggplot() +
 NWISjoin <- NWISgage_ht %>%
 left_join(y = NEgagepoints, by = c('site_no', 'station_nm')) %>%
 na.omit()
-```
-
-
-```{r NOT WORKING YET: fill in blank variables with something}
-#don't know how to do this
-#Pb1981to2018.complete <- (Pb1981to2018.points$Site.Name, Site.Name == "", "unnamed site") 
-#subset(Site.ID == 261630020, na.rm = TRUE)
-
-#EPA.NCAir.PM25.2018.sitespecific$AQS_PARAMETER_DESC <- "PM2.5"
 ```
 
 \newpage
@@ -473,28 +464,52 @@ summary(Pb1981to2018.interaction) #explains about 31% of the variance
 
 ```
 
-graph of plot lines
+graph of potential seasonal change
 ```{r 5.1 first final graph, echo=FALSE}
-Schools.plot.line <- ggplot()
 
-TNplot <- ggplot(PeterPaul.chem.nutrients, aes(x = depth, y = tn_ug, color = lakename)) + 
+Pb1981to2018.tidy$month <- as.character(Pb1981to2018.tidy$month)
+Pb1981to2018.tidy$month <- c("J", "F", "M", "A", "M", "J",
+                                  "J", "A", "S", "O", "N", "D") #do I need to name vars?
+
+xlab(expression("total Phosphorus(micrograms/L)")) +
+ylab(expression("Phosphate(micrograms/L)")) +
+class(Pb1981to2018.tidy$month)
+
+Pb.seasonal <- ggplot(Pb1981to2018.tidy, 
+                      aes(x = month, y = Daily.Mean.Pb.Concentration,
+                              color = Daily.Mean.Pb.Concentration)) +
+  geom_point(size = 1, alpha = 0.5) +
+  #scale_fill_discrete(name = "0 to 1.5 mg/m3", labels = c("A", "B", "C", "D", "E")) +
+  labs(title = "Seasonality of Lead in Air, Detroit, 1981-2018",
+       x = "month", y = "Mean Pb concentration") +
+  geom_smooth(color = "magenta", size = 0.5)
+print(Pb.seasonal)#Error: Aesthetics must be either length 1 or the same as the data (5418): x
+
+
+n + scale_fill_discrete(name = "Title",
+labels = c("A", "B", "C", "D", "E"))
+
+#TNplot <- ggplot(PeterPaul.chem.nutrients, aes(x = depth, y = tn_ug, color = lakename)) + 
   geom_point() + 
   geom_smooth(method = "lm", se = FALSE) + #if no color specified, it gave us 2 lines, if color = "something" it gives us 1 line
   xlim(0, 10)
-print(TNplot)
+#print(TNplot)
 ```
 
+Graph of air lead levels at places where children could be most at risk (schools, parks, church).
+```{r 5.2 FIX COLORS AND COLUMN NAMES child risk graph , echo=FALSE}
 
-```{r 5.2 child risk graph , echo=FALSE}
-Pb.childrisk <-  Pb1981to2018.points %>%
+#t + facet_grid(rows = vars(year), cols = vars(fl)) ??
+
+
+
+Pb.childrisk <-  Pb1981to2018.tidy %>%
   filter(Site.Name %in% c("PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS", 
                           "Allen Park", "Eliza Downwind", "Southwestern H.S.", 
-                          "NMH48217 NEW MT HERMAN CHURCH", "River Rouge")) %>%
-  mutate(month = month(Date), year = year(Date)) 
+                          "NMH48217 NEW MT HERMAN CHURCH", "River Rouge"))
 
 Pb.childrisk.plot <- ggplot(Pb.childrisk, 
-                            aes(x = year, y = Daily.Mean.Pb.Concentration,
-                               fill = year)) +
+                            aes(x = year, y = Daily.Mean.Pb.Concentration)) +
   geom_point(aes(), size = 1, alpha = 0.5) +
   facet_wrap(vars(Site.Name), 
              scales = "free_y", ncol = 1, strip.position = "right") +
@@ -504,10 +519,12 @@ Pb.childrisk.plot <- ggplot(Pb.childrisk,
   scale_y_log10() +
   theme(axis.line.x = element_line(color = "black"),
         legend.position = "bottom") 
+
 print(Pb.childrisk.plot)
 
 ```
 
+Can I possibly make a map??
 ```{r 5.3 third final graph, echo=FALSE}
 
 
