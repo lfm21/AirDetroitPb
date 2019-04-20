@@ -100,7 +100,7 @@ The files were downloaded from https://www.epa.gov/outdoor-air-quality-data/down
 Shapefiles of neighborhoods in the area were downloaded from michigan.gov.
 
 
-Reading in all 37 datasets.
+Read in all 37 datasets.
 ```{r read in all raw data files, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 Pb1981 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1981_raw.csv")
 Pb1982 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit1982_raw.csv")
@@ -155,10 +155,9 @@ Pb1981to2018.gathered <- rbind(Pb1981, Pb1982, Pb1983, Pb1984, Pb1985,
 #write.csv(Pb1981to2018.gathered, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.gathered.csv")
 ```
 
-
-Format date to Date class for gathered data frame. Convert coordinates into geometry (using crs = 4326 from http://gis-michigan.opendata.arcgis.com/datasets/D3::master-plan-neighborhoods-detroit). 
+Format date to Date class for gathered data frame. Convert coordinates into geometry (using crs = 4326 from http://gis-michigan.opendata.arcgis.com/datasets/D3::master-plan-neighborhoods-detroit).
 Select only useful columns to tidy up dataset.
-```{r class, echo=TRUE}
+```{r make points data frame, and to make tidy data frame, echo=TRUE}
 library(dplyr) 
 #if raster pkg loaded after dplyr, R will default to raster's select function
 
@@ -242,7 +241,6 @@ Pb1982.plot <- ggplot(Pb1982.month, aes(x = month,y = Daily.Mean.Pb.Concentratio
   #scale_y_log10() +
   theme(legend.position = "right") +
   labs(title = "Air Lead in Detroit, 1982")
-#print(Pb1982.plot)
 
 #and a more recent year
 Pb2018$Date <- as.Date(Pb2018$Date, format = "%m/%d/%Y")
@@ -258,25 +256,26 @@ Pb2018.plot <- ggplot(Pb2018.month, aes(x = month,y = Daily.Mean.Pb.Concentratio
   #scale_y_log10() +
   theme(legend.position = "right") +
   labs(title = "Air Lead in Detroit, 2018")
-#print(Pb2018.plot)
 
 library(gridExtra)
 grid.arrange(Pb1982.plot, Pb2018.plot, newpage = TRUE)
-
 ```
 
 ```{r look at the .shp }
 Detroit.neighborhoods <- 
-  st_read("./EPA_Pb_data_Raw/Detroit_nbhoods/Master_Plan_Neighborhoods_Detroit.shp")
-st_crs(Pb1981to2018.points)
+  st_read
+("./EPA_Pb_data_Raw/Detroit_nbhoods/Master_Plan_Neighborhoods_Detroit.shp")
+
+Detroit.nhds <- Detroit.neighborhoods["NHOOD"]
+
+st_crs(Pb1981to2018.tidy)
 st_crs(Detroit.neighborhoods)
-plot(Detroit.neighborhoods["NHOOD"])
-mapview(Detroit.neighborhoods["NHOOD"])
-mapview(Pb1981to2018.points["Site.ID"])
+mapview(Pb1981to2018.tidy["Site.Name"])
+mapview(Detroit.nhds)
 ```
 
 
-###Most of the wrangling was done earlier in document in order to show a tidy usable dataset for the kable table. But there are examples of the wrangling in the datasets below.
+###Most of the wrangling was done earlier in this document in order to show a tidy usable dataset for the kable table. But there are examples of the wrangling in the datasets below.
 I chose to test the wrangling on the 1982 dataset. Then I converted the coordinate columns to geometry points so they can be plotted on a map; and added a month and year column in order to see if there's seasonal change.
 
 ```{r 3.1 create 1980s and 2010s dataframes}
@@ -325,19 +324,34 @@ Pb2018month.yr <- select(Pb2018, Date, Site.ID, Site.Name,
   mutate(year = year(Date), month = month(Date)) 
 ```
 
-There are a few variables that have a Site.Id but no Site.Name. I'd like to fill the row with something.
+There are a few variables that have a Site.Id but no Site.Name, so we fill the NAs with something slightly more descriptive.
 ```{r 3.2 fill in the blank/missing Site Names with something}
 Pb1981to2018.tidy$Site.Name[Pb1981to2018.tidy$Site.Name == ""] <- "unlabeled site" 
 ```
 
-```{r wrangle the .shp to make it usable}
+```{r TEST --DUMP LATER-- JOIN AND MAPVIEW FOR .shp 1981 }
+Pb1981.tidy <- Pb1981 %>% 
+  select(Date, Site.ID, Daily.Mean.Pb.Concentration,
+         UNITS, Site.Name, SITE_LATITUDE, SITE_LONGITUDE) %>% 
+  mutate(year = year(Date), month = month(Date)) %>% 
+  st_as_sf(coords = c("SITE_LATITUDE", "SITE_LONGITUDE"),crs = 4326)
+
+class(Pb1981.tidy)
+
+Pb1981site <-  Detroit.nhds %>% left_join(y = Pb1981.tidy, by = c())
+plot(Pb1981site)
+             
+```
+
+
+```{r 3.3 wrangle the .shp to make it usable}
 
  #do I need to subset out SiteID or month or something to show points clearly?
 Detroit.1980smap <- ggplot() +
   geom_sf(data = Detroit.neighborhoods, col = "red") +
   geom_sf(data = Pb1980s, col = "blue") 
 plot(Pb1980s$geometry)
-plot(Detroit.1980smap)
+#plot(Detroit.1980smap) #this is just a weird grid 
 
 mapView(Pb1980s$geometry)
 
@@ -465,7 +479,7 @@ summary(Pb1981to2018.interaction) #explains about 31% of the variance
 ```
 
 graph of potential seasonal change
-```{r 5.1 first final graph, echo=FALSE}
+```{r 5.1 NOT DONE Seasonality graph, echo=FALSE}
 
 Pb1981to2018.tidy$month <- as.character(Pb1981to2018.tidy$month)
 Pb1981to2018.tidy$month <- c("J", "F", "M", "A", "M", "J",
@@ -497,37 +511,74 @@ labels = c("A", "B", "C", "D", "E"))
 ```
 
 Graph of air lead levels at places where children could be most at risk (schools, parks, church).
-```{r 5.2 FIX COLORS AND COLUMN NAMES child risk graph , echo=FALSE}
-
-#t + facet_grid(rows = vars(year), cols = vars(fl)) ??
-
-
-
+```{r 5.2 FIX COLORS child risk graph , echo=FALSE}
 Pb.childrisk <-  Pb1981to2018.tidy %>%
   filter(Site.Name %in% c("PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS", 
                           "Allen Park", "Eliza Downwind", "Southwestern H.S.", 
                           "NMH48217 NEW MT HERMAN CHURCH", "River Rouge"))
 
-Pb.childrisk.plot <- ggplot(Pb.childrisk, 
-                            aes(x = year, y = Daily.Mean.Pb.Concentration)) +
-  geom_point(aes(), size = 1, alpha = 0.5) +
-  facet_wrap(vars(Site.Name), 
-             scales = "free_y", ncol = 1, strip.position = "right") +
-  scale_color_viridis(option = "cividis") +
-  labs(title = "Air Lead Risk to Children, Detroit parks, 1981-2018",
-       x = "Year", y = "Lead Concentration ug/m3") +
-  scale_y_log10() +
-  theme(axis.line.x = element_line(color = "black"),
-        legend.position = "bottom") 
+Pb.childrisk$Site.Name[Pb.childrisk$Site.Name
+                       == "PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS"] <-
+  "Dearborn Public Schools"
+Pb.childrisk$Site.Name[Pb.childrisk$Site.Name
+                       == "NMH48217 NEW MT HERMAN CHURCH"] <-
+  "New Mt. Herman Church"
+Pb.childrisk$Site.Name[Pb.childrisk$Site.Name == "Eliza Downwind"] <-
+  "Eliza Howell Park"
+Pb.childrisk$Site.Name[Pb.childrisk$Site.Name == "River Rouge"] <- 
+  "River Rouge Park"
 
+Pb.childrisk.plot <- ggplot(Pb.childrisk,
+                            aes(x = year, y = Daily.Mean.Pb.Concentration)) +
+  geom_point(aes(), size = 2, alpha = 0.25) +
+  scale_fill_viridis_c() +
+  geom_smooth(aes(color = Site.Name), method = "glm",
+              se = FALSE, size = 1.5, show.legend = TRUE) +
+  scale_y_log10() +
+  labs(title = "Air Lead in Detroit parks, 1981-2018",
+       x = "Year", y = "Lead Concentration ug/m3") +
+  theme(axis.line.x = element_line(color = "black"),
+        legend.position = "right")
 print(Pb.childrisk.plot)
 
+Pb.childrisk.plot2 <- ggplot(Pb.childrisk,
+                            aes(x = year, color = Site.Name)) +
+  geom_histogram(aes(), bins = 300, size = 1.5) +
+  scale_fill_viridis_c() +
+  scale_y_log10() +
+  labs(title = "Sampling for Air Lead in Detroit parks, 1981-2018",
+       x = "Year", y = "Number of Samples") +
+  theme(axis.line.x = element_line(color = "black"),
+        legend.position = "right")
+print(Pb.childrisk.plot2)
+
+grid.arrange(Pb.childrisk.plot, Pb.childrisk.plot2)
 ```
 
 Can I possibly make a map??
-```{r 5.3 third final graph, echo=FALSE}
+to see mapview of all sample sites: http://localhost:20087/session/viewhtml9a8d31b5fda/index.html
+```{r 5.3 Map of sample sites graph, echo=FALSE}
+Detroit <- ggplot() +
+  geom_sf(data = Detroit.nhds, color = "green", size = 1) +
+  geom_sf(data = Pb1981.tidy, aes(fill = geometry), color = "red") +
+  scale_fill_gradient(low="yellow", high="darkgreen")
+print(Detroit) #Error in is.finite(x) : default method not implemented for type 'list' <- Detroit.nhds is just names and a list
 
+Detroit2 <- mapview(Pb1981to2018.gathered,
+                    xcol = "SITE_LONGITUDE",
+                    ycol = "SITE_LATITUDE",
+                    crs = 4326,
+                    grid = FALSE)
+Detroit2 #http://localhost:20087/session/viewhtml9a8d31b5fda/index.html
 
+Detroit3 <- 
+
+####
+ggplot() +
+  geom_sf(data = state_sf_utm, color='red',size=2) +
+  geom_sf(data = counties_sf_utm, aes(fill = ALAND), color = 'white')  +
+  geom_sf(data = EPAair_PM_avg_sf_UTM, color='blue', size=2) + 
+  scale_fill_gradient(low="yellow", high="darkgreen")
 
 ```
 
