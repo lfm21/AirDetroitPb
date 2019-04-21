@@ -1,17 +1,14 @@
 ---
+output: 
+  pdf_document:
+    keep_tex: yes
+    fig_caption: yes
+    number_sections: yes
+geometry: margin=2.54cm
 title: How has the "Motor City" of Detroit, MI, area experienced a decrease in air
   particulate lead over time?
-author: "Laurie Muzzy"
-fontsize: 12pt
-output:
-  pdf_document:
-    fig_caption: yes
-    keep_tex: yes
-    number_sections: yes
-  word_document: default
-mainfont: Times New Roman
-geometry: margin=2.54cm
 subtitle: https://github.com/lfm21/AirDetroitPb
+author: Laurie F. Muzzy
 abstract: Tetraethyl lead (TEL) was completely phased out of gasoline in 1995; air
   lead levels have decreased 98% from 1980 to 2014. In addition to dramatically decreased airborne lead concentrations, another indicator of progress in the reduction of
   airborne lead in the environment is the drop in children's blood lead levels over
@@ -22,12 +19,15 @@ abstract: Tetraethyl lead (TEL) was completely phased out of gasoline in 1995; a
   0.15 ug/m3, in terms of a 3-month average concentration. I would like to see how
   the Detroit, MI, area (known as Motor City) has experienced a decrease in air lead
   levels over time.
+fontsize: 12pt
+mainfont: Times New Roman
 ---
 
 <Information in these brackets are used for annotating the RMarkdown file. They will not appear in the final version of the PDF document>
 
 \newpage
 \tableofcontents 
+#DONT FORGET THIS
 \newpage
 \listoftables 
 \newpage
@@ -80,6 +80,7 @@ theme_set(Pbtheme)
 
 ```
 
+
 # Research Question and Rationale
 <Paragraph detailing the rationale for your analysis. What is the significant application and/or interest in this topic? Connect to environmental topic(s)/challenge(s).>
 
@@ -88,14 +89,34 @@ Children under 6 are extremely vulnerable to lead poisoning, the effects of whic
 <Paragraph detailing your research question(s) and goals. What do you want to find out? Include a sentence (or a few) on the dataset you are using to answer this question - just enough to give your reader an idea of where you are going with the analysis.>
 
 How has the "Motor City" Detroit, MI, area experienced a decrease in air lead levels over time?**** Where in the city has lead in air been sampled?**** Are the sample sites in the city at sites where vulnerable populations could be exposed?
-
 \newpage
 
 # Dataset Information
+
 <Information on how the dataset for this analysis were collected, the data contained in the dataset, and any important pieces of information that are relevant to your analyses. This section should contain much of same information as the README file for the dataset but formatted in a way that is more narrative.>
 
 The files were downloaded from https://www.epa.gov/outdoor-air-quality-data/download-daily-data and accessed on 2019-04-04. The area is Detroit-Warren-Dearborn in Michigan, USA. Lead(Pb) in air has been monitored every 12 days, since 1981 in Detroit-Dearborn-Warren area; there is a gap in data collection in the early 2000s. Files in .csv format were downloaded for every year available, which was 1981 until 2018. All files were accessed as .csv files, and named EPAair_Pb_Detroit_YEAR.csv
 Shapefiles of neighborhoods in the area were downloaded from michigan.gov.
+
+<Add a table that summarizes your data structure. This table can be made in markdown text or inserted as a `kable` function in an R chunk. If the latter, do not include the code used to generate your table.>
+
+Table of raw dataset of Detroit-Dearborn-Warren area from 2018, to show example of raw dataset.
+```{r kable table of data structure, echo=FALSE}
+Pb2018<- read.csv("EPA_Pb_data_Raw/EPA_Pb_Detroit2018_raw.csv")
+Pb2018str <- head(Pb2018)
+head(Pb2018)
+str(Pb2018)
+Pb2018.table <- kable(Pb2018, "markdown",align = "l", 
+                            caption = "EPA Air Lead in Detroit, 1981-2018", 
+                            escape = TRUE) 
+Pb2018.table
+```
+
+\newpage
+
+# Exploratory Data Analysis and Wrangling
+
+<Include R chunks for 5+ lines of summary code (display code and output), 3+ exploratory graphs (display graphs only), and any wrangling you do to your dataset(s).> 
 
 Read in all 37 datasets.
 ```{r read in all raw data files, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
@@ -149,10 +170,12 @@ Pb1981to2018.gathered <- rbind(Pb1981, Pb1982, Pb1983, Pb1984, Pb1985,
                       Pb2010, Pb2011, Pb2012, Pb2013, Pb2014,
                       Pb2015, Pb2016, Pb2017, Pb2018) 
 #write.csv(Pb1981to2018.gathered, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.gathered.csv")
+
 ```
 
 Format date to Date class for gathered data frame. Convert coordinates into geometry (using crs = 4326 from http://gis-michigan.opendata.arcgis.com/datasets/D3::master-plan-neighborhoods-detroit).
 Select only useful columns to tidy up dataset.
+
 ```{r make points data frame, and to make tidy data frame, echo=TRUE}
 library(dplyr) 
 #if raster pkg loaded after dplyr, R will default to raster's select function
@@ -182,26 +205,7 @@ Pb1981to2018.tidy.df <- Pb1981to2018.gathered %>%
   
 ```
 
-<Add a table that summarizes your data structure. This table can be made in markdown text or inserted as a `kable` function in an R chunk. If the latter, do not include the code used to generate your table.>
-
-##Table of processed dataset of every sample from Detroit-Dearborn-Warren area from each year (1981-2018).
-```{r kable table, echo=FALSE}
-
-PbDetroit <- head(Pb1981to2018.tidy)
-AirPbDetroit.table <- kable(PbDetroit, "markdown",align = "l", 
-                            caption = "EPA Air Lead in Detroit, 1981-2018", 
-                            escape = TRUE) 
-AirPbDetroit.table
-```
-
-\newpage
-# Exploratory Data Analysis and Wrangling
-
-<Include R chunks for 5+ lines of summary code (display code and output), 3+ exploratory graphs (display graphs only), and any wrangling you do to your dataset(s).> 
-
-<Include text sections to accompany these R chunks to explain the reasoning behind your workflow, and the rationale for your approach.>
-
-View the summaries of the datasets. The first dataset was from 1981, so I chose that one to examine the column names, dimensions, structure, and class type (sample date must be converted to class Date).
+View the summaries of the datasets. The first dataset was from 1981, so I chose that one to examine the column names, dimensions, structure, and class type.
 ```{r 1 - summary of example 1981 dataframe, then of Pb1981to2018.tidy}
 str(Pb1981)
 colnames(Pb1981) 
@@ -214,24 +218,27 @@ dim(Pb1981to2018.tidy)
 colnames(Pb1981to2018.tidy)
 ```
 
-```{r 2.1 - exploratory histogram to see Pb concentration, using 1981 dataset}
-
+```{r 2.1 - exploratory histogram to see Pb concentration, using 1981 and 2009 datasets}
+#1981 samples...
 ggplot(Pb1981) +
   geom_histogram(aes(x = Daily.Mean.Pb.Concentration), bins = 45) +
   labs(title = "Air Lead in Detroit, 1981")
+#and 2009
+ggplot(Pb2009) +
+  geom_histogram(aes(x = Daily.Mean.Pb.Concentration), bins = 120) +
+  labs(title = "Air Lead in Detroit, 2009")
 ```
 
 ```{r 2.2 - histogram to see Pb concentration in a more recent year}
 
-ggplot(Pb2009) +
-  geom_histogram(aes(x = Daily.Mean.Pb.Concentration), bins = 100) +
-  labs(title = "Air Lead in Detroit, 2009")
+
 ```
 
 ```{r 2.3 two largest datasets: SWHS and Dearborn school sites}
-summary(Pb1981to2018.points$Site.Name)
 
-Pb.large.sets <- Pb1981to2018.points %>%
+summary(Pb1981to2018.sf$Site.Name)
+
+Pb.large.sets <- Pb1981to2018.sf %>%
   filter(Site.Name %in% c("Southwestern H.S.",
                           "PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS"))
 
@@ -252,22 +259,7 @@ Pb.large.sets.plot <-
 grid.arrange(Pb.Dear.SWHS.plot, Pb.large.sets.plot)
 ```
 
-```{r MAYBE DONT NEED THIS look at the .shp }
-#Detroit.neighborhoods <- 
-  st_read
-("./EPA_Pb_data_Raw/Detroit_nbhoods/Master_Plan_Neighborhoods_Detroit.shp")
-
-#Detroit.nhds <- Detroit.neighborhoods["NHOOD"]
-
-#st_crs(Pb1981to2018.tidy)
-#st_crs(Detroit.neighborhoods)
-#mapview(Pb1981to2018.tidy["Site.Name"])
-#mapview(Detroit.nhds)
-```
-
-
-###Most of the wrangling was done earlier in this document in order to show a tidy usable dataset for the kable table. But there are examples of the wrangling in the datasets below.
-I chose to test the wrangling on the 1982 dataset. Then I converted the coordinate columns to geometry points so they can be plotted on a map; and added a month and year column in order to see if there's seasonal change.
+It would be good to see the difference between the 1980s and the 2010s in terms of air Pb levels, so I made a 1980s data frame and a 2010s dataframe. Then I converted the coordinate columns to geometry points so they can be plotted on a map; and added a month and year column in order to see if there's seasonal change.
 
 ```{r 3.1 create 1980s and 2010s dataframes}
 #1980s
@@ -284,8 +276,8 @@ Pb1980s <- Pb1980s.gath %>% select(Date, Site.ID, Daily.Mean.Pb.Concentration,
 #write.csv(Pb1980s, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1980s.csv")
   
 #2010s
-Pb2010s.gath <- rbind(Pb1981, Pb1982, Pb1983, Pb1984, Pb1985, 
-                 Pb1986, Pb1987, Pb1988, Pb1989, Pb1990)
+Pb2010s.gath <- rbind(Pb2010, Pb2011, Pb2012, Pb2013, Pb2014, 
+                 Pb2015, Pb2016, Pb2017, Pb2018)
 
 Pb2010s.gath$Date <- as.Date(Pb2010s.gath$Date, format = "%m/%d/%Y") 
 
@@ -297,34 +289,11 @@ Pb2010s <- Pb2010s.gath %>% select(Date, Site.ID, Daily.Mean.Pb.Concentration,
 #write.csv(Pb2010s, row.names = FALSE, "./EPA_Pb_data_Processed/Pb2010s.csv")
 ```
 
-
-```{r 1982 and 2018 - I PROB DONT NEED THIS wrangling example datasets}
-#wrangle 1982 data frame
-as.Date(Pb1982$Date, format = "%m/%d/%Y") #takes up too much space
-
-Pb1982.month.yr <-select(Pb1982, Date, Site.ID, Site.Name,
-                         Daily.Mean.Pb.Concentration, UNITS,
-                         SITE_LATITUDE, SITE_LONGITUDE) %>% 
-  mutate(year = year(Date), month = month(Date)) 
-
-#wrangle 2018 data frame
-as.Date(Pb2018$Date, format = "%m/%d/%Y") #takes up too much space
-Pb2018month.yr <- select(Pb2018, Date, Site.ID, Site.Name,
-                                    Daily.Mean.Pb.Concentration, UNITS,
-                                    SITE_LATITUDE, SITE_LONGITUDE) %>% 
-  mutate(year = year(Date), month = month(Date)) 
-```
-
-There are a few variables that have a Site.Id but no Site.Name, so we fill the NAs with something slightly more descriptive.
-```{r 3.2 WHAT HAPPENED fill in the blank/missing Site Names with something}
-class(Pb1981to2018.tidy.df$Site.Name)
-
-Pb1981to2018.tidy.df <- read.csv("./EPA_Pb_data_Processed/Pb1981to2018.tidy.df.csv")
-Pb1981to2018.tidy.df$Site.Name <- as.character(Pb1981to2018.tidy.df$Site.Name)
+```{r 3.2 WHAT HAPPENED??? fill in the blank/missing Site Names with something}
 Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == ""] <- "(site not labeled)"
-Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == "PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS"] <- "Dearborn public schools sites" 
-(Pb1981to2018.tidy.df$Site.Name)
-
+#Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == ""] <- "unlabeled site" 
+#invalid factor level, NA generated
+#Pb1981to2018.tidy.df$Site.Name[is.na(Pb1981to2018.tidy.df$Site.Name)] <- "unlabeled site" 
 ```
 
 ```{r 3.3 - show differences in mean Pb by months in early 80s vs. last year}
@@ -364,7 +333,7 @@ library(gridExtra)
 grid.arrange(Pb1982.plot, Pb2018.plot, newpage = TRUE)
 ```
 
-```{r}
+```{r 3.4 plot of Pb concn over time}
 Pb.overtime <- ggplot(Pb1981to2018.tidy, 
                       aes(x = year, y = Daily.Mean.Pb.Concentration, color = Site.Name)) +
   geom_point(size = 0.5, alpha = 0.25) +
@@ -373,41 +342,17 @@ Pb.overtime <- ggplot(Pb1981to2018.tidy,
 print(Pb.overtime)
                       
 ```
+<Include text sections to accompany these R chunks to explain the reasoning behind your workflow, and the rationale for your approach.>
 
-```{r 3.3 NOT FINISHED YET wrangle the .shp to make it usable}
-
- #do I need to subset out SiteID or month or something to show points clearly?
-Detroit.1980smap <- ggplot() +
-  geom_sf(data = Detroit.neighborhoods, col = "red") +
-  geom_sf(data = Pb1980s, col = "blue") 
-print(Detroit.1980smap)
- #this is just a weird grid 
-
-mapView(Pb1980s$geometry)
-
-Detroit.1980sjoin <- Detroit.neighborhoods %>% 
-  left_join(y = Pb1980s, by = c())
-
-#FROM LESSON correct order to see mult datasets
-ggplot() +
-  geom_sf(data = state_sf_utm, color='red',size=2) +
-  geom_sf(data = counties_sf_utm, aes(fill = ALAND), color = 'white')  +
-  geom_sf(data = EPAair_PM_avg_sf_UTM, color='blue', size=2) + 
-  scale_fill_gradient(low="yellow", high="darkgreen")
-
-#why a left join
-NWISjoin <- NWISgage_ht %>%
-left_join(y = NEgagepoints, by = c('site_no', 'station_nm')) %>%
-na.omit()
-```
 
 \newpage
 
-
-## Analysis
+# Analysis
 <Include R chunks for 3+ statistical tests (display code and output) and 3+ final visualization graphs (display graphs only).>
-###Is there a normal distribution of Daily Mean Lead Concentration values in different decades? In different months? At different sites? 
 
+<Include text sections to accompany these R chunks to explain the reasoning behind your workflow, rationale for your approach, and the justification of meeting or failing to meet assumptions of tests.>
+
+###Is there a normal distribution of Daily Mean Lead Concentration values in different decades? In different months? At different sites? 
 A  Shapiro-Wilk test was done on a few separate datasets. The Shapiro test can only run between 3 and 5000, so the Pb1981to2018.gathered data frame is slightly too large. Instead I'll run Shapiro on one dataset from each decade that has a relatively high number of observations. T-tests were then done to determine if the mean was indeed lower than 1.0ug/m3.
 For all of these years, the p-values were very low, so we can reject the null hypothesis, as the alternative is true: the mean air lead concentration in these years was less than 1.0ug/m3.
 From 1984 to 1990, the mean Pb concentration was an order of magnitude lower;
@@ -483,7 +428,6 @@ Pb.large.sets.wilcox <-
 Pb.large.sets.wilcox
 
 ```
-
 ANCOVA and was run for the whole gathered dataset of Pb concentrations from the all the sites from 1981 to 2018 to determine the level of co-variance. The linear models explained about 31% of the covariance here.
 ```{r 4.4 ANCOVA, echo=TRUE}
 #is there co-variance btwn date and site?
@@ -502,7 +446,6 @@ summary(Pb1981to2018.interaction) #explains about 31% of the variance
 
 
 ```
-
 
 ##Data Visualization
 Graph of potential seasonal change.
@@ -573,66 +516,6 @@ print(Pb.childrisk.plot2)
 
 grid.arrange(Pb.childrisk.plot, Pb.childrisk.plot2)
 ```
-
-```{r Change in lead concentration over time TIME SERIES ANALYSIS??}
-
-
-geom_vline(xintercept = as.Date("1991-08-26"), color = "orange", lty = 2) +
-geom_vline(xintercept = as.Date("1993-05-26"), color = "navy", lty = 1) +
-```
-
-
-Can I possibly make a map??
-to see mapview of all sample sites: http://localhost:20087/session/viewhtml9a8d31b5fda/index.html
-```{r 5.3 Map of sample sites graph, echo=FALSE}
-
-# add locations to sf map, make larger circles for higher Pb concn, add labels to sites
-summarise(Detroit.nhds)
-st_bbox(Detroit.nhds)
-mapview(Detroit.nhds)
-Pb1981.tidy.sf <- st_as_sf(Pb1981.tidy) 
-Detroit.nhds.sf <- st_as_sf(Detroit.nhds)
-
-aqs_sites <- read.csv("EPA_Pb_data_Raw/aqs_sites.csv")
-aqs_sites.geo <- st_as_sf(aqs_sites,
-                          coords = c("Latitude", "Longitude"),
-                          crs = 4326)
-class(aqs_sites$Longitude)
-
-aqs_sites2 <- mapview(aqs_sites, xcol = "Latitude", ycol = "Longitude",
-        crs = 4326, grid = FALSE)
-
-nhds.1981.join <- 
-
-Detroit <- ggplot() +
-  geom_sf(data = Pb1981.tidy.sf, aes(fill = geometry), color = "red") +
-  geom_sf(data = aqs_sites, color = "green", size = 1) +
-  scale_fill_gradient(low="yellow", high="darkgreen")
-print(Detroit) #Error in is.finite(x) : default method not implemented for type 'list' <- Detroit.nhds is just names and a list
-#prob need to create a join 
-
-
-
-Detroit2 <- mapview(Pb1981to2018.gathered,
-                    xcol = "SITE_LONGITUDE",
-                    ycol = "SITE_LATITUDE",
-                    crs = 4326,
-                    grid = FALSE)
-Detroit2 #http://localhost:20087/session/viewhtml9a8d31b5fda/index.html
-
-Detroit3 <- 
-
-####
-ggplot() +
-  geom_sf(data = state_sf_utm, color='red',size=2) +
-  geom_sf(data = counties_sf_utm, aes(fill = ALAND), color = 'white')  +
-  geom_sf(data = EPAair_PM_avg_sf_UTM, color='blue', size=2) + 
-  scale_fill_gradient(low="yellow", high="darkgreen")
-
-```
-
-
-<Include text sections to accompany these R chunks to explain the reasoning behind your workflow, rationale for your approach, and the justification of meeting or failing to meet assumptions of tests.>
 
 
 \newpage
