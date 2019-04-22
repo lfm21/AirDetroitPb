@@ -315,16 +315,25 @@ Pb2018month.yr <- select(Pb2018, Date, Site.ID, Site.Name,
   mutate(year = year(Date), month = month(Date)) 
 ```
 
-There are a few variables that have a Site.Id but no Site.Name, so we fill the NAs with something slightly more descriptive.
-```{r 3.2 WHAT HAPPENED fill in the blank/missing Site Names with something}
+There are a few variables that have a Site.Id but no Site.Name, make sure the NAs are filled.
+```{r 3.2 standardize Site Names}
 class(Pb1981to2018.tidy.df$Site.Name)
-
-Pb1981to2018.tidy.df <- read.csv("./EPA_Pb_data_Processed/Pb1981to2018.tidy.df.csv")
 Pb1981to2018.tidy.df$Site.Name <- as.character(Pb1981to2018.tidy.df$Site.Name)
-Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == ""] <- "(site not labeled)"
-Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == "PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS"] <- "Dearborn public schools sites" 
-(Pb1981to2018.tidy.df$Site.Name)
 
+Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == "(site not labeled)"] <- "(site not specified)"
+Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == "PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS"] <- "Dearborn public schools sites" 
+Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == "NMH48217 NEW MT HERMAN CHURCH"] <- "New Mt. Herman Church" 
+Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == "DP4th - Detroit Police 4th Precinct"] <- "DPD, 4th Precinct" 
+Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == "Eliza Downwind"] <- "Eliza Howell Park"
+
+PbSites <- ggplot(Pb1981to2018.tidy.df, aes(x = Site.Name, fill = Site.Name)) +
+  geom_histogram(stat = "count") +
+  labs(x = "Sample Sites") +
+  theme(legend.position = "right", 
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+print(PbSites)
+
+#write.csv(Pb1981to2018.tidy.df, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.tidy.df.csv")
 ```
 
 ```{r 3.3 - show differences in mean Pb by months in early 80s vs. last year}
@@ -364,7 +373,7 @@ library(gridExtra)
 grid.arrange(Pb1982.plot, Pb2018.plot, newpage = TRUE)
 ```
 
-```{r}
+```{r -- Pb concn over time}
 Pb.overtime <- ggplot(Pb1981to2018.tidy, 
                       aes(x = year, y = Daily.Mean.Pb.Concentration, color = Site.Name)) +
   geom_point(size = 0.5, alpha = 0.25) +
@@ -498,15 +507,42 @@ summary(Pb1981to2018.interaction) #explains about 31% of the variance
 
 ```
 
-```{r 4.5 ??? Mann Kendall test on large sample sets, look for changepoints}
+Is there a trend in overall Pb concentrations in Detroit area?
+Is there a trend in Dearborn public school sites and SW High School Pb levels?
+```{r 4.5 Mann Kendall test on large sample sets, then Pettitt test}
+Pb.large.sets <- Pb.large.sets %>% 
+  select(Date, Site.ID, Daily.Mean.Pb.Concentration,
+         UNITS, Site.Name, geometry) %>% 
+  mutate(year = year(Date), month = month(Date)) 
+ggplot(Pb.large.sets, 
+                     aes(x = Date, y = Daily.Mean.Pb.Concentration,
+                         color = Site.Name)) +
+  geom_point(alpha = 0.25) +
+  scale_y_log10()
 
+SWHS <- filter(Pb.large.sets, Site.Name == "Southwestern H.S.")
+Dearborn <- filter(Pb.large.sets, Site.Name == "PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS")
 
+mk.test(SWHS$Daily.Mean.Pb.Concentration) #low p-val & z shows pretty strong negative trend
+mk.test(Dearborn$Daily.Mean.Pb.Concentration) #same trend, though not as strongly negative
+
+pettitt.test(SWHS$Daily.Mean.Pb.Concentration) #1-234; 235 - 684
+mk.test(SWHS$Daily.Mean.Pb.Concentration[1:234])
+mk.test(SWHS$Daily.Mean.Pb.Concentration[235:684])
+pettitt.test(SWHS$Daily.Mean.Pb.Concentration[235:684]) #305 ; 305+234=539
+mk.test(SWHS$Daily.Mean.Pb.Concentration[539:684]) 
+#SWHS change points at 235 and 539
+
+pettitt.test(Dearborn$Daily.Mean.Pb.Concentration) #1-444; 445 - 1492
+mk.test(Dearborn$Daily.Mean.Pb.Concentration[1:444]) #not as significant
+mk.test(Dearborn$Daily.Mean.Pb.Concentration[445:1492])
+pettitt.test(Dearborn$Daily.Mean.Pb.Concentration[445:1492]) #821 ; 821+445=1266
+#Dearborn schools changepoints at 445 (and lesser one at 1266)
 ```
-
 
 ##Data Visualization
 Graph of potential seasonal change.
-```{r 5.1 Seasonality graph, echo=FALSE}
+```{r 5.1 - Seasonality graph, echo=FALSE}
 
 Pb1981to2018.tidy$month <- as.character(Pb1981to2018.tidy$month)
 class(Pb1981to2018.tidy$month)
@@ -528,7 +564,7 @@ print(Pb.seasonal)
 ```
 
 Graph of air lead levels at places where children could be most at risk (schools, parks, church). 
-```{r 5.2 parks/schools childrisk graph , echo=FALSE}
+```{r 5.2 - parks/schools childrisk graph , echo=FALSE}
 #filter schools and parks and fix labels
 Pb.childrisk <-  Pb1981to2018.tidy %>%
   filter(Site.Name %in% c("PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS", 
@@ -574,11 +610,21 @@ print(Pb.childrisk.plot2)
 grid.arrange(Pb.childrisk.plot, Pb.childrisk.plot2)
 ```
 
-```{r Change in lead concentration over time TIME SERIES ANALYSIS??}
+Time series visualization for Southwestern High School and Dearborn public schools sites.
+```{r 5.3 - Change in lead concentration over time TIME SERIES ANALYSIS, echo=FALSE}
+#"2008-11-08" Dear, SWHS "1991-10-21", "2005-11-12"
+Pbtrends.DearPS.SWHS <- ggplot(Pb.large.sets, 
+                               aes(x = Date, y = Daily.Mean.Pb.Concentration,
+                                   color = Site.Name)) +
+  geom_point(aes(x = Date, y = Daily.Mean.Pb.Concentration), alpha = 0.25, size = 1) +
+  geom_vline(xintercept = as.Date("2008-11-08"), color = "darkgreen", lty = 2) +
+  geom_vline(xintercept = as.Date("1991-10-21"), color = "purple", lty = 2) +
+  geom_vline(xintercept = as.Date("2005-11-12"), color = "purple", lty = 2) +
+  scale_y_log10() +
+  scale_color_manual(values = c("purple", "darkgreen")) +
+  labs(x = "Date", "Pb concentration, ug/m3")
+print(Pbtrends.DearPS.SWHS)
 
-
-geom_vline(xintercept = as.Date("1991-08-26"), color = "orange", lty = 2) +
-geom_vline(xintercept = as.Date("1993-05-26"), color = "navy", lty = 1) +
 ```
 
 

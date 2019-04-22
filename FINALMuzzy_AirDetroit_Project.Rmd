@@ -234,7 +234,7 @@ ggplot(Pb2009) +
 
 ```
 
-```{r 2.3 two largest datasets: SWHS and Dearborn school sites}
+```{r 2.3 - two largest datasets: SWHS and Dearborn school sites}
 
 summary(Pb1981to2018.sf$Site.Name)
 
@@ -261,7 +261,27 @@ grid.arrange(Pb.Dear.SWHS.plot, Pb.large.sets.plot)
 
 It would be good to see the difference between the 1980s and the 2010s in terms of air Pb levels, so I made a 1980s data frame and a 2010s dataframe. Then I converted the coordinate columns to geometry points so they can be plotted on a map; and added a month and year column in order to see if there's seasonal change.
 
-```{r 3.1 create 1980s and 2010s dataframes}
+```{r 3.1 - standardize Site Names}
+class(Pb1981to2018.tidy.df$Site.Name)
+Pb1981to2018.tidy.df$Site.Name <- as.character(Pb1981to2018.tidy.df$Site.Name)
+
+Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == "(site not labeled)"] <- "(site not specified)"
+Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == "PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS"] <- "Dearborn public schools sites" 
+Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == "NMH48217 NEW MT HERMAN CHURCH"] <- "New Mt. Herman Church" 
+Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == "DP4th - Detroit Police 4th Precinct"] <- "DPD, 4th Precinct" 
+Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == "Eliza Downwind"] <- "Eliza Howell Park"
+
+PbSites <- ggplot(Pb1981to2018.tidy.df, aes(x = Site.Name, fill = Site.Name)) +
+  geom_histogram(stat = "count") +
+  labs(x = "Sample Sites") +
+  theme(legend.position = "right", 
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+print(PbSites)
+
+#write.csv(Pb1981to2018.tidy.df, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.tidy.df.csv")
+```
+
+```{r 3.2 - create 1980s and 2010s dataframes}
 #1980s
 Pb1980s.gath <- rbind(Pb1981, Pb1982, Pb1983, Pb1984, Pb1985, 
                  Pb1986, Pb1987, Pb1988, Pb1989, Pb1990)
@@ -287,13 +307,6 @@ Pb2010s <- Pb2010s.gath %>% select(Date, Site.ID, Daily.Mean.Pb.Concentration,
   st_as_sf(coords = c("SITE_LATITUDE", "SITE_LONGITUDE"),crs = 4326)
 
 #write.csv(Pb2010s, row.names = FALSE, "./EPA_Pb_data_Processed/Pb2010s.csv")
-```
-
-```{r 3.2 WHAT HAPPENED??? fill in the blank/missing Site Names with something}
-Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == ""] <- "(site not labeled)"
-#Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == ""] <- "unlabeled site" 
-#invalid factor level, NA generated
-#Pb1981to2018.tidy.df$Site.Name[is.na(Pb1981to2018.tidy.df$Site.Name)] <- "unlabeled site" 
 ```
 
 ```{r 3.3 - show differences in mean Pb by months in early 80s vs. last year}
@@ -333,15 +346,6 @@ library(gridExtra)
 grid.arrange(Pb1982.plot, Pb2018.plot, newpage = TRUE)
 ```
 
-```{r 3.4 plot of Pb concn over time}
-Pb.overtime <- ggplot(Pb1981to2018.tidy, 
-                      aes(x = year, y = Daily.Mean.Pb.Concentration, color = Site.Name)) +
-  geom_point(size = 0.5, alpha = 0.25) +
-  scale_y_log10() +
-  theme(legend.position = "bottom")
-print(Pb.overtime)
-                      
-```
 <Include text sections to accompany these R chunks to explain the reasoning behind your workflow, and the rationale for your approach.>
 
 
@@ -517,7 +521,20 @@ print(Pb.childrisk.plot2)
 grid.arrange(Pb.childrisk.plot, Pb.childrisk.plot2)
 ```
 
+```{r 5.3 plot of Pb concn over time}
+class(Pb1981to2018.tidy.df$Date)
 
+Pb.overtime <- ggplot(Pb1981to2018.tidy.df, 
+                      aes(x = Date, y = Daily.Mean.Pb.Concentration)) +
+  geom_point(size = 0.5, alpha = 0.25) +
+  #scale_y_log10() +
+  geom_vline(xintercept = "1995-01-01", color = "blue", lty = 2) +
+  scale_fill_manual(breaks = c("1980", "1985", "1990",
+                               "1995", "2000", "2005", "2010", "2015")) +
+  theme(legend.position = "bottom")
+print(Pb.overtime)
+
+```
 \newpage
 
 # Summary and Conclusions
