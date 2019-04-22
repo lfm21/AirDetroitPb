@@ -9,16 +9,7 @@ title: How has the "Motor City" of Detroit, MI, area experienced a decrease in a
   particulate lead over time?
 subtitle: https://github.com/lfm21/AirDetroitPb
 author: Laurie F. Muzzy
-abstract: Tetraethyl lead (TEL) was completely phased out of gasoline in 1995; air
-  lead levels have decreased 98% from 1980 to 2014. In addition to dramatically decreased airborne lead concentrations, another indicator of progress in the reduction of
-  airborne lead in the environment is the drop in children's blood lead levels over
-  time. Since the late 1970s, average blood lead concentration for children aged 1
-  to 5 have dropped significantly, from about 15 micrograms per deciliter (µg/dL)
-  to less than 1 µg/dL. On September 16, 2016, EPA announced its decision to retain,
-  without revision, the national ambient air quality standards (NAAQS) for lead of
-  0.15 ug/m3, in terms of a 3-month average concentration. I would like to see how
-  the Detroit, MI, area (known as Motor City) has experienced a decrease in air lead
-  levels over time.
+abstract: In the U.S., tetraethyl lead (TEL) was banned from paint in 1978, and completely phased out of gasoline in 1995. Due to these policies, air lead levels have decreased about 98% from 1980 to 2014. In 2008, the EPA lowered the national ambient air quality standards (NAAQS) for lead of 0.15 ug/m3, in terms of a 3-month average concentration. However, lead is still permitted in some aviation fuel, and lead paint exists in older homes and many urban soils, making dust in homes and airborne particles persistant hazards to small children. The area around Detroit, MI, the "Motor City", may contain air lead at higher levels due to the longtime automobile industry. This study found that the Detroit area had statistically significantly lower air lead concetrations than the 1980s and 1990s.
 fontsize: 12pt
 mainfont: Times New Roman
 ---
@@ -27,11 +18,29 @@ mainfont: Times New Roman
 
 \newpage
 \tableofcontents 
-#DONT FORGET THIS
+Research Question and Rationale
+Dataset Information
+Exploratory Data Analysis and Wrangling
+Analysis
+Summary and Conclusions
+
 \newpage
 \listoftables 
+
+Table 1. Raw dataset example of EPA Air Quality dataset.
 \newpage
 \listoffigures 
+
+*Figure 1. Histogram of oldest dataset (1981), and of newest dataset (2018).
+*Figure 2. Generalized line graph of change in lead concentration over time (Pb.overtime).
+*Figure 3. Histogram & frequency polygon regarding two longest-used sample sites (Pb.Dear.SWHS.plot, Pb.large.sets.plot).
+*Figure 4. Counts of all sampled sites (PbSites).
+*Figure 5. Mean Pb levels by month in 1982 vs. 2018 ().
+*Figure 6. Stat test with longest-used data sets (Pb.large.sets2)
+*Figure 7. Lead concentrations by month at all Detroit sites (Pb.seasonal).
+*Figure 8. Air lead concentrations at sites where children may be at risk (Pb.childrisk).
+*Figure 9. Change in lead risk over time, from Mann-Kendall test(Pbtrends.DearPS.SWHS).
+
 \newpage
 
 <Setup the global options for the R chunks in your document>
@@ -80,15 +89,14 @@ theme_set(Pbtheme)
 
 ```
 
-
 # Research Question and Rationale
 <Paragraph detailing the rationale for your analysis. What is the significant application and/or interest in this topic? Connect to environmental topic(s)/challenge(s).>
 
-Children under 6 are extremely vulnerable to lead poisoning, the effects of which show up later in life, and cannot be remediated. Lead exposure and poisoning therefore has large public health, social, and economic ramifications. Tetraethyl lead (TEL) was an additive in gasoline for decades, but growing public health pressures in the United States caused it to be completely phased out of gasoline by 1995. With this reduction of lead in nearly all gasoline, air lead levels have decreased 98% from 1980 to 2014.  In 2016, the U.S. EPA announced revised national ambient air quality standards (NAAQS) for lead of 0.15 ug/m3, in terms of a 3-month average concentration. Despite this ridiculously low concentration standard, and the dramatic decrease in the past four decades, lead still persists in the environment. Lead in paint has been banned in the U.S., but certain airplanes are still permitted to use leaded fuel. My research is interested in what lead concentrations are still extant in the air, especially in a larger American cities, where automobiles are the most common mode of transportation.
+Children under 6 are extremely vulnerable to lead poisoning, the effects of which show up later in life, and cannot be remediated. Lead exposure and poisoning therefore has large public health, social, and economic ramifications. Tetraethyl lead (TEL) was an additive in gasoline for decades, but growing public health pressures in the United States caused it to be completely phased out of gasoline by 1995. With this reduction of lead in nearly all gasoline, air lead levels have decreased 98% from 1980 to 2014.  In 2008, the U.S. EPA announced revised national ambient air quality standards (NAAQS) for lead of 0.15 ug/m3, in terms of a 3-month average concentration. Despite this ridiculously low concentration standard, and the dramatic decrease in the past four decades, lead still persists in the environment. Lead in paint and gasoline has been banned in the U.S., though certain older airplanes are still permitted to use leaded fuel. The decreasing air lead levels could be due to the capture of lead-containing particulates by soil or human-made structures. My research is interested in what lead concentrations are still extant in the air, especially in larger American cities, where automobiles are the most common mode of transportation. 
 
 <Paragraph detailing your research question(s) and goals. What do you want to find out? Include a sentence (or a few) on the dataset you are using to answer this question - just enough to give your reader an idea of where you are going with the analysis.>
 
-How has the "Motor City" Detroit, MI, area experienced a decrease in air lead levels over time?**** Where in the city has lead in air been sampled?**** Are the sample sites in the city at sites where vulnerable populations could be exposed?
+How has the "Motor City" Detroit, MI, area experienced a decrease in air lead levels over time? 
 \newpage
 
 # Dataset Information
@@ -100,17 +108,17 @@ Shapefiles of neighborhoods in the area were downloaded from michigan.gov.
 
 <Add a table that summarizes your data structure. This table can be made in markdown text or inserted as a `kable` function in an R chunk. If the latter, do not include the code used to generate your table.>
 
-Table of raw dataset of Detroit-Dearborn-Warren area from 2018, to show example of raw dataset.
-```{r kable table of data structure, echo=FALSE}
-Pb2018<- read.csv("EPA_Pb_data_Raw/EPA_Pb_Detroit2018_raw.csv")
-Pb2018str <- head(Pb2018)
+```{r kable table of data structure, echo=FALSE, fig.height=10, fig.width=8}
+Pb2018<- read.csv("EPA_Pb_data_Raw/EPA_Pb_Detroit2018_raw.csv", header = TRUE)
+Pb2018str <- summary(Pb2018)
 head(Pb2018)
 str(Pb2018)
-Pb2018.table <- kable(Pb2018, "markdown",align = "l", 
-                            caption = "EPA Air Lead in Detroit, 1981-2018", 
-                            escape = TRUE) 
+Pb2018.table <- kable(Pb2018str[1:8], "markdown",align = "l",
+                      caption = "EPA Air Lead in Detroit, 1981-2018",
+                      escape = TRUE, knitr.kable.NA = '') 
 Pb2018.table
 ```
+
 
 \newpage
 
@@ -161,7 +169,7 @@ Pb2018 <- read.csv("./EPA_Pb_data_raw/EPA_Pb_Detroit2018_raw.csv")
 ```
 
 Combine all datasets using rbind.
-```{r one large dataset of all years, echo=FALSE}
+```{r one large dataset of all years, echo=TRUE, fig.height=9, fig.width=7, message=FALSE, warning=FALSE}
 Pb1981to2018.gathered <- rbind(Pb1981, Pb1982, Pb1983, Pb1984, Pb1985,
                       Pb1986, Pb1987, Pb1988, Pb1989, Pb1990,
                       Pb1991, Pb1992, Pb1993, Pb1994, Pb1995,
@@ -173,28 +181,29 @@ Pb1981to2018.gathered <- rbind(Pb1981, Pb1982, Pb1983, Pb1984, Pb1985,
 
 ```
 
-Format date to Date class for gathered data frame. Convert coordinates into geometry (using crs = 4326 from http://gis-michigan.opendata.arcgis.com/datasets/D3::master-plan-neighborhoods-detroit).
-Select only useful columns to tidy up dataset.
+Format date to Date class for gathered data frame. Select only useful columns to tidy up data frame of all years.
+(Converted coordinates into geometry using crs = 4326 from http://gis-michigan.opendata.arcgis.com/datasets/D3::master-plan-neighborhoods-detroit, in order to write .sf and a data.frame csv.)
 
-```{r make points data frame, and to make tidy data frame, echo=TRUE}
-library(dplyr) 
-#if raster pkg loaded after dplyr, R will default to raster's select function
+```{r - make tidy data frame, echo=TRUE, fig.height=9, fig.width=7, warning=FALSE}
 
-Pb1981to2018.gathered$Date <- as.Date(Pb1981to2018.gathered$Date, format = "%m/%d/%Y")
+Pb1981to2018.gathered$Date <- as.Date(Pb1981to2018.gathered$Date,
+                                      format = "%m/%d/%Y")
 class(Pb1981to2018.gathered$Daily.Mean.Pb.Concentration)
 
 Pb1981to2018.sf <- st_as_sf(Pb1981to2018.gathered,
                                 coords = c("SITE_LATITUDE", "SITE_LONGITUDE"),
                                 crs = 4326)
 
-#write.csv(Pb1981to2018.sf, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.sf.csv")
+#write.csv(Pb1981to2018.sf, 
+          #row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.sf.csv")
 
 Pb1981to2018.tidy <- Pb1981to2018.sf %>% 
   select(Date, Site.ID, Daily.Mean.Pb.Concentration,
          UNITS, Site.Name, geometry) %>% 
   mutate(year = year(Date), month = month(Date))
 
-#write.csv(Pb1981to2018.tidy, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.tidy.csv")
+#write.csv(Pb1981to2018.tidy, 
+          #row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.tidy.csv")
 
 Pb1981to2018.tidy.df <- Pb1981to2018.gathered %>% 
   select(Date, Site.ID, Daily.Mean.Pb.Concentration,
@@ -206,36 +215,50 @@ Pb1981to2018.tidy.df <- Pb1981to2018.gathered %>%
 ```
 
 View the summaries of the datasets. The first dataset was from 1981, so I chose that one to examine the column names, dimensions, structure, and class type.
-```{r 1 - summary of example 1981 dataframe, then of Pb1981to2018.tidy}
+```{r 1 - summary of 1981 dataframe, echo=TRUE, fig.height=9, fig.width=7, message=FALSE, warning=FALSE}
 str(Pb1981)
-colnames(Pb1981) 
+#colnames(Pb1981) 
 class(Pb1981$Date)
-head(Pb1981)
-summary(Pb1981)
+class(Pb1981$Site.Name)
+#head(Pb1981)
+summary(Pb1981$Daily.Mean.Pb.Concentration)
+summary(Pb1981$Site.Name)
+summary(Pb1981to2018.tidy$Site.Name)
 dim(Pb1981)
-
 dim(Pb1981to2018.tidy)
 colnames(Pb1981to2018.tidy)
 ```
 
-```{r 2.1 - exploratory histogram to see Pb concentration, using 1981 and 2009 datasets}
+It is necessary to compare a dataset from the first year to a dataset from the most recent year.
+```{r 2.1 - fig1 histogram: Pb concentration in oldest and newest datasets, echo=FALSE, message=FALSE, warning=FALSE}
 #1981 samples...
 ggplot(Pb1981) +
-  geom_histogram(aes(x = Daily.Mean.Pb.Concentration), bins = 45) +
-  labs(title = "Air Lead in Detroit, 1981")
-#and 2009
-ggplot(Pb2009) +
-  geom_histogram(aes(x = Daily.Mean.Pb.Concentration), bins = 120) +
-  labs(title = "Air Lead in Detroit, 2009")
+  geom_histogram(aes(x = Daily.Mean.Pb.Concentration, fill = Site.Name),
+                 bins = 45) +
+  labs(title = "Air Lead in Detroit, 1981") +
+  theme(legend.position = "right")
+#and 2018
+ggplot(Pb2018) +
+  geom_histogram(aes(x = Daily.Mean.Pb.Concentration, fill = Site.Name),
+                 bins = 100) +
+  labs(title = "Air Lead in Detroit, 2018") +
+  theme(legend.position = "right")
 ```
 
-```{r 2.2 - histogram to see Pb concentration in a more recent year}
-
-
+I included a graph to see how the concentration of Pb in air has changed over time. It decreased significantly over the four decades, but there is still one site, the New Mt. Herman Church, that has increased since it started being sampled.
+```{r 2.2 - fig2 GLM graph of Pb concn over time, echo=FALSE, fig.height=8, fig.width=6}
+Pb.overtime <- ggplot(Pb1981to2018.tidy, 
+                      aes(x = year, y = Daily.Mean.Pb.Concentration,
+                          color = Site.Name)) +
+  geom_smooth(method = "glm", size = 0.5, alpha = 0.25) +
+  scale_y_log10() +
+  geom_hline(yintercept = 0.15, lty = 2, size = 0.5, color = "blue") +
+  theme(legend.position = "bottom") +
+  labs(caption = "Blue dotted line represents current NAAQS of 0.15ug/m3")
+print(Pb.overtime)
 ```
 
-```{r 2.3 - two largest datasets: SWHS and Dearborn school sites}
-
+```{r 2.3 - fig3 two largest datasets: SWHS and Dearborn school sites, echo=FALSE, warning=FALSE}
 summary(Pb1981to2018.sf$Site.Name)
 
 Pb.large.sets <- Pb1981to2018.sf %>%
@@ -253,23 +276,32 @@ Pb.large.sets.plot <-
   ggplot(Pb.large.sets, 
          aes(x = Daily.Mean.Pb.Concentration, color = Site.Name)) +
   geom_freqpoly(stat = "count", alpha = 0.5) +
+  scale_color_manual(values = c( "magenta", "orange")) +
   labs(x = "Lead concentration, ug/m3", y = "number of observations", 
        title = "Sites in Detroit w/ Largest Sample Size of Air Lead Data")
 
 grid.arrange(Pb.Dear.SWHS.plot, Pb.large.sets.plot)
 ```
 
-It would be good to see the difference between the 1980s and the 2010s in terms of air Pb levels, so I made a 1980s data frame and a 2010s dataframe. Then I converted the coordinate columns to geometry points so they can be plotted on a map; and added a month and year column in order to see if there's seasonal change.
-
-```{r 3.1 - standardize Site Names}
+##Wrangling
+First I standardized site names. The class of Site.Name was factor, so it had to be changed to character class. Then made a histogram to see which sites were the most sampled.
+```{r 3.1 - fig 4 standardize Site Names, warning=FALSE}
 class(Pb1981to2018.tidy.df$Site.Name)
 Pb1981to2018.tidy.df$Site.Name <- as.character(Pb1981to2018.tidy.df$Site.Name)
 
-Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == "(site not labeled)"] <- "(site not specified)"
-Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == "PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS"] <- "Dearborn public schools sites" 
-Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == "NMH48217 NEW MT HERMAN CHURCH"] <- "New Mt. Herman Church" 
-Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == "DP4th - Detroit Police 4th Precinct"] <- "DPD, 4th Precinct" 
-Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name == "Eliza Downwind"] <- "Eliza Howell Park"
+Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name 
+                               == ""] <- "(site not specified)"
+Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name
+                               == "PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS"] <- 
+  "Dearborn public schools sites" 
+Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name 
+                               == "NMH48217 NEW MT HERMAN CHURCH"] <- 
+  "New Mt. Herman Church" 
+Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name 
+                               == "DP4th - Detroit Police 4th Precinct"] <-
+  "DPD, 4th Precinct" 
+Pb1981to2018.tidy.df$Site.Name[Pb1981to2018.tidy.df$Site.Name 
+                               == "Eliza Downwind"] <- "Eliza Howell Park"
 
 PbSites <- ggplot(Pb1981to2018.tidy.df, aes(x = Site.Name, fill = Site.Name)) +
   geom_histogram(stat = "count") +
@@ -281,7 +313,8 @@ print(PbSites)
 #write.csv(Pb1981to2018.tidy.df, row.names = FALSE, "./EPA_Pb_data_Processed/Pb1981to2018.tidy.df.csv")
 ```
 
-```{r 3.2 - create 1980s and 2010s dataframes}
+It would be good to see the difference between the 1980s and the 2010s in terms of air Pb levels, so I made a 1980s data frame and a 2010s dataframe. Then I added a month and year column in order to see if there's seasonal change, and converted lat and long to geometry (though no map was made, the csv is saved for futire analysis).
+```{r 3.2 - create 1980s and 2010s dataframes, warning=FALSE}
 #1980s
 Pb1980s.gath <- rbind(Pb1981, Pb1982, Pb1983, Pb1984, Pb1985, 
                  Pb1986, Pb1987, Pb1988, Pb1989, Pb1990)
@@ -309,45 +342,48 @@ Pb2010s <- Pb2010s.gath %>% select(Date, Site.ID, Daily.Mean.Pb.Concentration,
 #write.csv(Pb2010s, row.names = FALSE, "./EPA_Pb_data_Processed/Pb2010s.csv")
 ```
 
-```{r 3.3 - show differences in mean Pb by months in early 80s vs. last year}
+Added year and month columns to determine if seasonality exists, and created scatterplots to show difference between 1980s and 2010s.
+```{r 3.3 - fig5 differences in mean Pb by months in early 80s vs. 2018, warning=FALSE}
 #early 1980s plot
 Pb1982$Date <- as.Date(Pb1982$Date, format = "%m/%d/%Y")
 
-Pb1982.month <- select(Pb1982, Date, Site.ID, Daily.Mean.Pb.Concentration, UNITS,
-         Site.Name, SITE_LATITUDE, SITE_LONGITUDE) %>% 
+Pb1982.month <- select(Pb1982, Date, Site.ID, Daily.Mean.Pb.Concentration,
+                       UNITS, Site.Name, SITE_LATITUDE, SITE_LONGITUDE) %>% 
   mutate(year = year(Date), month = month(Date))
 
-Pb1982.plot <- ggplot(Pb1982.month, aes(x = month,y = Daily.Mean.Pb.Concentration,
-                                  color = Site.ID)) +
+Pb1982.plot <- ggplot(Pb1982.month, aes(x = month,
+                                        y = Daily.Mean.Pb.Concentration,
+                                        color = Site.ID)) +
   geom_point(alpha = 0.75) +
-  scale_color_viridis_c(breaks = c(0, 0.15, 0.75, 3.0), 
+  scale_color_viridis_c(option ="plasma", breaks = c(0, 0.15, 0.75, 3.0), 
                         "Mean Lead\nConcentration", direction = -1) +
-  scale_y_log10() +
-  theme(legend.position = "right") +
-  labs(title = "Air Lead in Detroit, 1982")
+  ylim(0, 1.5) +
+  #scale_y_log10() +
+  theme(legend.position = "bottom") +
+  labs(title = "Air Lead in Detroit area, 1982")
 
 #and a more recent year
 Pb2018$Date <- as.Date(Pb2018$Date, format = "%m/%d/%Y")
 
-Pb2018.month <- select(Pb2018, Date, Site.ID, Daily.Mean.Pb.Concentration, UNITS,
-         Site.Name, SITE_LATITUDE, SITE_LONGITUDE) %>% 
+Pb2018.month <- select(Pb2018, Date, Site.ID, Daily.Mean.Pb.Concentration,
+                       UNITS, Site.Name, SITE_LATITUDE, SITE_LONGITUDE) %>% 
   mutate(year = year(Date), month = month(Date))
 
-Pb2018.plot <- ggplot(Pb2018.month, aes(x = month,y = Daily.Mean.Pb.Concentration,
-                                  color = Site.ID)) +
+Pb2018.plot <- ggplot(Pb2018.month, aes(x = month,
+                                        y = Daily.Mean.Pb.Concentration,
+                                        color = Site.ID)) +
   geom_point(alpha = 0.75) +
-  scale_color_viridis_c(breaks = c(0, 0.15, 0.75, 3.0), 
-                        "Mean Lead\nConcentration", direction = -1) +
-  scale_y_log10() +
-  theme(legend.position = "right") +
-  labs(title = "Air Lead in Detroit, 2018")
+  scale_color_viridis_c(option ="plasma", breaks = c(0, 0.15, 0.75, 3.0), 
+                        "Mean Lead\nConcentration") +
+  ylim(0, 1.5) +
+  #scale_y_log10() +
+  theme(legend.position = "bottom") +
+  labs(title = "Air Lead in Detroit area, 2018")
 
-library(gridExtra)
 grid.arrange(Pb1982.plot, Pb2018.plot, newpage = TRUE)
 ```
 
 <Include text sections to accompany these R chunks to explain the reasoning behind your workflow, and the rationale for your approach.>
-
 
 \newpage
 
@@ -356,12 +392,13 @@ grid.arrange(Pb1982.plot, Pb2018.plot, newpage = TRUE)
 
 <Include text sections to accompany these R chunks to explain the reasoning behind your workflow, rationale for your approach, and the justification of meeting or failing to meet assumptions of tests.>
 
-###Is there a normal distribution of Daily Mean Lead Concentration values in different decades? In different months? At different sites? 
+Is there a normal distribution of Daily Mean Lead Concentration values in different decades? In different months? At different sites?
+
 A  Shapiro-Wilk test was done on a few separate datasets. The Shapiro test can only run between 3 and 5000, so the Pb1981to2018.gathered data frame is slightly too large. Instead I'll run Shapiro on one dataset from each decade that has a relatively high number of observations. T-tests were then done to determine if the mean was indeed lower than 1.0ug/m3.
 For all of these years, the p-values were very low, so we can reject the null hypothesis, as the alternative is true: the mean air lead concentration in these years was less than 1.0ug/m3.
 From 1984 to 1990, the mean Pb concentration was an order of magnitude lower;
-```{r 4.1 -  Shapiro-Wilk test: normal distribution, echo=TRUE}
-#look at dataset from the 1980s, the 90s, the 2000s, and then a more recent dataset
+```{r 4.1 -  Shapiro-Wilk test: normal distribution, echo=TRUE, warning=FALSE}
+#look at data from the 1980s, the 90s, the 2000s, and then a more recent dataset
 summary(Pb1984$Daily.Mean.Pb.Concentration)
 shapiro.test(Pb1984$Daily.Mean.Pb.Concentration)
 #W = 0.88254, p-value = 3.677e-10
@@ -391,34 +428,31 @@ t.test.1smpl.2017
 
 A comparison of the largest datasets was done to determine how different the variance between them may be. 
 First Shapiro-Wilk tests then an F test was performed. The result is that the variance between the two populations is different. From the graph, it seems like we don't have a normal distribution with these datasets, so we should proceed with tests that do not necessarily require normality.
-```{r 4.2 two-way t-test on largest sample sets, echo=TRUE}
+```{r 4.2 - two-way t-test on largest sample sets, echo=TRUE}
 #statistical comparison of the 2 largest sample sets
 shapiro.test(Pb.large.sets$Daily.Mean.Pb.Concentration
              [Pb.large.sets$Site.Name == "Southwestern H.S."])
-
 shapiro.test(Pb.large.sets$Daily.Mean.Pb.Concentration
              [Pb.large.sets$Site.Name == 
                  "PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS"])
-
 var.test(Pb.large.sets$Daily.Mean.Pb.Concentration ~
            Pb.large.sets$Site.Name)
 
 lm.Pb.large.sets <- lm(Pb.large.sets$Daily.Mean.Pb.Concentration ~
                           Pb.large.sets$Site.Name)
 summary(lm.Pb.large.sets)
-
 ```
 
-Kruskal-Wallis tests was performed on the whole large gathered data frame (Pb1981to2018.points); the p-val was low, showing some significance of the hypothesis that Pb concentration is realted to site.
+Is lead concentration related to site?
+Kruskal-Wallis tests was performed on the whole large gathered data frame (Pb1981to2018.points); the p-val was low, showing some significance of the hypothesis that Pb concentration is related to site.
 Then Kruskal was done on the data frame with the two largest sample sizes (Pb.large.sets). We see that there is a significant difference between the two groups in the largest datasets.
-DO A TEST WITH DAILY MEAN AND MONTH/SEASONALITY
-```{r 4.3 kruskal-wallis test - non parametric, then wilcoxon for post-hoc}
+```{r 4.3 - kruskal-wallis test - non parametric, then wilcoxon for post-hoc}
 #for the whole gathered dataset
 Pb1981to2018.kw <- kruskal.test(Pb1981to2018.tidy$Daily.Mean.Pb.Concentration ~
-                Pb1981to2018.points$Site.ID)
+                Pb1981to2018.tidy.df$Site.ID)
 Pb1981to2018.kw
 Pb1981to2018.wilcox <- 
-  wilcox.test(Pb1981to2018.points$Daily.Mean.Pb.Concentration,
+  wilcox.test(Pb1981to2018.tidy.df$Daily.Mean.Pb.Concentration,
               mu = 50, alternative = "less")
 Pb1981to2018.wilcox
 
@@ -430,30 +464,43 @@ Pb.large.sets.wilcox <-
   wilcox.test(Pb.large.sets$Daily.Mean.Pb.Concentration,
               mu = 50, alternative = "less")
 Pb.large.sets.wilcox
-
-```
-ANCOVA and was run for the whole gathered dataset of Pb concentrations from the all the sites from 1981 to 2018 to determine the level of co-variance. The linear models explained about 31% of the covariance here.
-```{r 4.4 ANCOVA, echo=TRUE}
-#is there co-variance btwn date and site?
-Pb1981to2018.ancova <- lm(data = Pb1981to2018.points, 
-                          Daily.Mean.Pb.Concentration ~ Date + Site.ID)
-summary(Pb1981to2018.ancova) 
-
-#is there an interaction btwn date and site?
-Pb1981to2018.interaction <- lm(data = Pb1981to2018.points, 
-                               Daily.Mean.Pb.Concentration ~ Date * Site.ID)
-summary(Pb1981to2018.interaction) #explains about 31% of the variance
-
 ```
 
-```{r 4.5 ??? Mann Kendall test on large sample sets, look for changepoints}
+Is there a trend in Dearborn public school sites and SW High School Pb levels?
+```{r 4.4 - fig6 Mann Kendall test on large sample sets, then Pettitt test}
+Pb.large.sets2 <- Pb.large.sets %>% 
+  select(Date, Site.ID, Daily.Mean.Pb.Concentration,
+         UNITS, Site.Name, geometry) %>% 
+  mutate(year = year(Date), month = month(Date)) 
+ggplot(Pb.large.sets, aes(x = Date, y = Daily.Mean.Pb.Concentration,
+                          color = Site.Name)) +
+  geom_point(alpha = 0.25) +
+  scale_y_log10()
 
+SWHS <- filter(Pb.large.sets2, Site.Name == "Southwestern H.S.")
+Dearborn <- filter(Pb.large.sets2, 
+                   Site.Name == "PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS")
 
+mk.test(SWHS$Daily.Mean.Pb.Concentration) #low p-val & z shows pretty strong negative trend
+mk.test(Dearborn$Daily.Mean.Pb.Concentration) #same trend, though not as strongly negative
+
+pettitt.test(SWHS$Daily.Mean.Pb.Concentration) #1-234; 235 - 684
+mk.test(SWHS$Daily.Mean.Pb.Concentration[1:234])
+mk.test(SWHS$Daily.Mean.Pb.Concentration[235:684])
+pettitt.test(SWHS$Daily.Mean.Pb.Concentration[235:684]) #305 ; 305+234=539
+mk.test(SWHS$Daily.Mean.Pb.Concentration[539:684]) 
+#SWHS change points at 235 and 539
+
+pettitt.test(Dearborn$Daily.Mean.Pb.Concentration) #1-444; 445 - 1492
+mk.test(Dearborn$Daily.Mean.Pb.Concentration[1:444]) #not as significant
+mk.test(Dearborn$Daily.Mean.Pb.Concentration[445:1492])
+pettitt.test(Dearborn$Daily.Mean.Pb.Concentration[445:1492]) #821 ; 821+445=1266
+#Dearborn schools changepoints at 445 (and lesser one at 1266)
 ```
 
 ##Data Visualization
 Graph of potential seasonal change.
-```{r 5.1 Seasonality graph, echo=FALSE}
+```{r 5.1 - fig7 Seasonality graph, echo=FALSE, warning=FALSE}
 
 Pb1981to2018.tidy$month <- as.character(Pb1981to2018.tidy$month)
 class(Pb1981to2018.tidy$month)
@@ -474,10 +521,10 @@ Pb.seasonal <- ggplot(Pb1981to2018.tidy,
 print(Pb.seasonal)
 ```
 
-Graph of air lead levels at places where children could be most at risk (schools, parks, church). 
-```{r 5.2 parks/schools childrisk graph , echo=FALSE}
+Graph of air lead levels at places where children could be most at risk (schools, parks, church).
+```{r 5.2 - fig8 parks/schools childrisk graph, echo=FALSE, message=TRUE, warning=FALSE}
 #filter schools and parks and fix labels
-Pb.childrisk <-  Pb1981to2018.tidy %>%
+Pb.childrisk <-  Pb1981to2018.tidy.df %>%
   filter(Site.Name %in% c("PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS", 
                           "Allen Park", "Eliza Downwind", "Southwestern H.S.", 
                           "NMH48217 NEW MT HERMAN CHURCH", "River Rouge"))
@@ -521,18 +568,20 @@ print(Pb.childrisk.plot2)
 grid.arrange(Pb.childrisk.plot, Pb.childrisk.plot2)
 ```
 
-```{r 5.3 plot of Pb concn over time}
-class(Pb1981to2018.tidy.df$Date)
-
-Pb.overtime <- ggplot(Pb1981to2018.tidy.df, 
-                      aes(x = Date, y = Daily.Mean.Pb.Concentration)) +
-  geom_point(size = 0.5, alpha = 0.25) +
-  #scale_y_log10() +
-  geom_vline(xintercept = "1995-01-01", color = "blue", lty = 2) +
-  scale_fill_manual(breaks = c("1980", "1985", "1990",
-                               "1995", "2000", "2005", "2010", "2015")) +
-  theme(legend.position = "bottom")
-print(Pb.overtime)
+Time series visualization for Southwestern High School and Dearborn public schools sites.
+```{r 5.3 - fig9 Change in lead concentration over time, echo=FALSE, warning=FALSE}
+#"2008-11-08" Dear, SWHS "1991-10-21", "2005-11-12"
+Pbtrends.DearPS.SWHS <- ggplot(Pb.large.sets, 
+                               aes(x = Date, y = Daily.Mean.Pb.Concentration,
+                                   color = Site.Name)) +
+  geom_jitter(aes(x = Date, y = Daily.Mean.Pb.Concentration), alpha = 0.5) +
+  geom_vline(xintercept = as.Date("2008-11-08"), color = "darkgreen",lty = 2) +
+  geom_vline(xintercept = as.Date("1991-10-21"), color = "purple", lty = 2) +
+  geom_vline(xintercept = as.Date("2005-11-12"), color = "purple", lty = 2) +
+  scale_y_log10() +
+  scale_color_manual(values = c("purple", "darkgreen")) +
+  labs(x = "Date", "Pb concentration, ug/m3")
+print(Pbtrends.DearPS.SWHS)
 
 ```
 \newpage
@@ -540,5 +589,7 @@ print(Pb.overtime)
 # Summary and Conclusions
 <Summarize your major findings from your analyses. What conclusions do you draw from your findings? Make sure to apply this to a broader application for the research question you have answered.>
 
+The main takeaway is that lead concentrations have decreased to very low levels over the past 38 years for the sample sites in the Detroit area. The longest-running sample sites, a high school and public school properties, have decreased in lead concentration by an order of magnitude since the 1980s. There is one site that has increased since sampling began there in the late 2010s, but we cannot claim that there is any statistical sigificance to that since the sample size there is so low. It is proof that changes in environmental policy can work.
+This dataset, while longstanding, could be made better by consistent sampling. There was a gap in the mid-2000s for a while where there is no data. However, the task used to be more expensive but is now less expensive to conduct, and ever-evolving data analysis methods can make dissemination faster and more robust. 
 
 

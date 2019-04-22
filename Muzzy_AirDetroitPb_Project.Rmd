@@ -229,9 +229,9 @@ ggplot(Pb2009) +
 ```
 
 ```{r 2.3 two largest datasets: SWHS and Dearborn school sites}
-summary(Pb1981to2018.points$Site.Name)
+summary(Pb1981to2018.sf$Site.Name)
 
-Pb.large.sets <- Pb1981to2018.points %>%
+Pb.large.sets <- Pb1981to2018.sf %>%
   filter(Site.Name %in% c("Southwestern H.S.",
                           "PROPERTY OWNED BY DEARBORN PUBLIC SCHOOLS"))
 
@@ -252,22 +252,7 @@ Pb.large.sets.plot <-
 grid.arrange(Pb.Dear.SWHS.plot, Pb.large.sets.plot)
 ```
 
-```{r MAYBE DONT NEED THIS look at the .shp }
-#Detroit.neighborhoods <- 
-  st_read
-("./EPA_Pb_data_Raw/Detroit_nbhoods/Master_Plan_Neighborhoods_Detroit.shp")
-
-#Detroit.nhds <- Detroit.neighborhoods["NHOOD"]
-
-#st_crs(Pb1981to2018.tidy)
-#st_crs(Detroit.neighborhoods)
-#mapview(Pb1981to2018.tidy["Site.Name"])
-#mapview(Detroit.nhds)
-```
-
-
-###Most of the wrangling was done earlier in this document in order to show a tidy usable dataset for the kable table. But there are examples of the wrangling in the datasets below.
-I chose to test the wrangling on the 1982 dataset. Then I converted the coordinate columns to geometry points so they can be plotted on a map; and added a month and year column in order to see if there's seasonal change.
+Then I converted the coordinate columns to geometry points so they can be plotted on a map; and added a month and year column in order to see if there's seasonal change.
 
 ```{r 3.1 create 1980s and 2010s dataframes}
 #1980s
@@ -295,24 +280,6 @@ Pb2010s <- Pb2010s.gath %>% select(Date, Site.ID, Daily.Mean.Pb.Concentration,
   st_as_sf(coords = c("SITE_LATITUDE", "SITE_LONGITUDE"),crs = 4326)
 
 #write.csv(Pb2010s, row.names = FALSE, "./EPA_Pb_data_Processed/Pb2010s.csv")
-```
-
-
-```{r 1982 and 2018 - I PROB DONT NEED THIS wrangling example datasets}
-#wrangle 1982 data frame
-as.Date(Pb1982$Date, format = "%m/%d/%Y") #takes up too much space
-
-Pb1982.month.yr <-select(Pb1982, Date, Site.ID, Site.Name,
-                         Daily.Mean.Pb.Concentration, UNITS,
-                         SITE_LATITUDE, SITE_LONGITUDE) %>% 
-  mutate(year = year(Date), month = month(Date)) 
-
-#wrangle 2018 data frame
-as.Date(Pb2018$Date, format = "%m/%d/%Y") #takes up too much space
-Pb2018month.yr <- select(Pb2018, Date, Site.ID, Site.Name,
-                                    Daily.Mean.Pb.Concentration, UNITS,
-                                    SITE_LATITUDE, SITE_LONGITUDE) %>% 
-  mutate(year = year(Date), month = month(Date)) 
 ```
 
 There are a few variables that have a Site.Id but no Site.Name, make sure the NAs are filled.
@@ -383,33 +350,6 @@ print(Pb.overtime)
                       
 ```
 
-```{r 3.3 NOT FINISHED YET wrangle the .shp to make it usable}
-
- #do I need to subset out SiteID or month or something to show points clearly?
-Detroit.1980smap <- ggplot() +
-  geom_sf(data = Detroit.neighborhoods, col = "red") +
-  geom_sf(data = Pb1980s, col = "blue") 
-print(Detroit.1980smap)
- #this is just a weird grid 
-
-mapView(Pb1980s$geometry)
-
-Detroit.1980sjoin <- Detroit.neighborhoods %>% 
-  left_join(y = Pb1980s, by = c())
-
-#FROM LESSON correct order to see mult datasets
-ggplot() +
-  geom_sf(data = state_sf_utm, color='red',size=2) +
-  geom_sf(data = counties_sf_utm, aes(fill = ALAND), color = 'white')  +
-  geom_sf(data = EPAair_PM_avg_sf_UTM, color='blue', size=2) + 
-  scale_fill_gradient(low="yellow", high="darkgreen")
-
-#why a left join
-NWISjoin <- NWISgage_ht %>%
-left_join(y = NEgagepoints, by = c('site_no', 'station_nm')) %>%
-na.omit()
-```
-
 \newpage
 
 
@@ -475,10 +415,10 @@ DO A TEST WITH DAILY MEAN AND MONTH/SEASONALITY
 ```{r 4.3 kruskal-wallis test - non parametric, then wilcoxon for post-hoc}
 #for the whole gathered dataset
 Pb1981to2018.kw <- kruskal.test(Pb1981to2018.tidy$Daily.Mean.Pb.Concentration ~
-                Pb1981to2018.points$Site.ID)
+                Pb1981to2018.tidy.df$Site.ID)
 Pb1981to2018.kw
 Pb1981to2018.wilcox <- 
-  wilcox.test(Pb1981to2018.points$Daily.Mean.Pb.Concentration,
+  wilcox.test(Pb1981to2018.tidy.df$Daily.Mean.Pb.Concentration,
               mu = 50, alternative = "less")
 Pb1981to2018.wilcox
 
@@ -496,12 +436,12 @@ Pb.large.sets.wilcox
 ANCOVA and was run for the whole gathered dataset of Pb concentrations from the all the sites from 1981 to 2018 to determine the level of co-variance. The linear models explained about 31% of the covariance here.
 ```{r 4.4 ANCOVA, echo=TRUE}
 #is there co-variance btwn date and site?
-Pb1981to2018.ancova <- lm(data = Pb1981to2018.points, 
+Pb1981to2018.ancova <- lm(data = Pb1981to2018.tidy.df, 
                           Daily.Mean.Pb.Concentration ~ Date + Site.ID)
 summary(Pb1981to2018.ancova) 
 
 #is there an interaction btwn date and site?
-Pb1981to2018.interaction <- lm(data = Pb1981to2018.points, 
+Pb1981to2018.interaction <- lm(data = Pb1981to2018.tidy.df, 
                                Daily.Mean.Pb.Concentration ~ Date * Site.ID)
 summary(Pb1981to2018.interaction) #explains about 31% of the variance
 
@@ -624,56 +564,6 @@ Pbtrends.DearPS.SWHS <- ggplot(Pb.large.sets,
   scale_color_manual(values = c("purple", "darkgreen")) +
   labs(x = "Date", "Pb concentration, ug/m3")
 print(Pbtrends.DearPS.SWHS)
-
-```
-
-
-Can I possibly make a map??
-to see mapview of all sample sites: http://localhost:20087/session/viewhtml9a8d31b5fda/index.html
-```{r 5.3 Map of sample sites graph, echo=FALSE}
-
-# add locations to sf map, make larger circles for higher Pb concn, add labels to sites
-summarise(Detroit.nhds)
-st_bbox(Detroit.nhds)
-mapview(Detroit.nhds)
-Pb1981.tidy.sf <- st_as_sf(Pb1981.tidy) 
-Detroit.nhds.sf <- st_as_sf(Detroit.nhds)
-
-aqs_sites <- read.csv("EPA_Pb_data_Raw/aqs_sites.csv")
-aqs_sites.geo <- st_as_sf(aqs_sites,
-                          coords = c("Latitude", "Longitude"),
-                          crs = 4326)
-class(aqs_sites$Longitude)
-
-aqs_sites2 <- mapview(aqs_sites, xcol = "Latitude", ycol = "Longitude",
-        crs = 4326, grid = FALSE)
-
-nhds.1981.join <- 
-
-Detroit <- ggplot() +
-  geom_sf(data = Pb1981.tidy.sf, aes(fill = geometry), color = "red") +
-  geom_sf(data = aqs_sites, color = "green", size = 1) +
-  scale_fill_gradient(low="yellow", high="darkgreen")
-print(Detroit) #Error in is.finite(x) : default method not implemented for type 'list' <- Detroit.nhds is just names and a list
-#prob need to create a join 
-
-
-
-Detroit2 <- mapview(Pb1981to2018.gathered,
-                    xcol = "SITE_LONGITUDE",
-                    ycol = "SITE_LATITUDE",
-                    crs = 4326,
-                    grid = FALSE)
-Detroit2 #http://localhost:20087/session/viewhtml9a8d31b5fda/index.html
-
-Detroit3 <- 
-
-####
-ggplot() +
-  geom_sf(data = state_sf_utm, color='red',size=2) +
-  geom_sf(data = counties_sf_utm, aes(fill = ALAND), color = 'white')  +
-  geom_sf(data = EPAair_PM_avg_sf_UTM, color='blue', size=2) + 
-  scale_fill_gradient(low="yellow", high="darkgreen")
 
 ```
 
